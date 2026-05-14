@@ -220,7 +220,10 @@ jobs:
 
       - if: runner.os == 'Windows'
         name: Zip artifact (Windows)
-        run: Compress-Archive ${{ runner.workspace }}/samp-discord-connector/build/artifact/* ${{ runner.workspace }}/samp-discord-connector/build/artifact/discord-connector-${{ env.REPO_TAG }}-${{ runner.os }}-${{ matrix.build-type }}.zip
+        run: |
+          $artifactPath = "${{ github.workspace }}\build\artifact"
+          $zipPath = "$artifactPath\discord-connector-${{ env.REPO_TAG }}-${{ runner.os }}-${{ matrix.build-type }}.zip"
+          Compress-Archive -Path "$artifactPath\*" -DestinationPath $zipPath
         shell: pwsh
 
       - if: runner.os == 'Linux'
@@ -235,11 +238,11 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: discord-connector-${{ env.REPO_TAG }}-${{ runner.os }}-${{ matrix.build-type }}
-          path: ${{ runner.workspace }}/samp-discord-connector/build/artifact/discord-connector-${{ env.REPO_TAG }}-${{ runner.os }}-${{ matrix.build-type }}.zip
+          path: ${{ github.workspace }}\build\artifact\discord-connector-${{ env.REPO_TAG }}-${{ runner.os }}-${{ matrix.build-type }}.zip
 
       - if: runner.os == 'Linux'
         name: Upload artifact (Linux)
         uses: actions/upload-artifact@v4
         with:
           name: discord-connector-${{ env.REPO_TAG }}-${{ runner.os }}-${{ matrix.build-type }}
-          path: ${{ runner.workspace }}/samp-discord-connector/build/artifact/discord-connector-${{ env.REPO_TAG }}-${{ runner.os }}-${{ matrix.build-type }}.zip
+          path: ${{ github.workspace }}/build/artifact/discord-connector-${{ env.REPO_TAG }}-${{ runner.os }}-${{ matrix.build-type }}.zip
