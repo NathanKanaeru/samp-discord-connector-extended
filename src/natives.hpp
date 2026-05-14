@@ -160,7 +160,7 @@ namespace Native
 
 	AMX_DECLARE_NATIVE(DCC_SendChannelMessageEx);
 
-	AMX_DECLARE_NATIVE(DCC_GetInteractionSelectMenuValue);
-	AMX_DECLARE_NATIVE(DCC_GetInteractionSelectMenuValueCount);
+	AMX_DECLARE_NATIVE(DCC_GetInteractionMenuValue);
+	AMX_DECLARE_NATIVE(DCC_GetInteractionMenuCount);
 	AMX_DECLARE_NATIVE(DCC_GetModalInputValue);
 }

@@ -1,5 +1,5 @@
 /* Discord Connector
- * Version @DCC_VERSION@
+ * Version 0.3.6
  * made by maddinat0r
  */
 

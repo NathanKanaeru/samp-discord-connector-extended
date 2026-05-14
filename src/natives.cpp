@@ -3515,10 +3515,10 @@ AMX_DECLARE_NATIVE(Native::DCC_SendChannelMessageEx)
 	return 1;
 }
 
-// native DCC_GetInteractionSelectMenuValue(DCC_Interaction:interaction, offset, dest[], max_size = sizeof dest);
-AMX_DECLARE_NATIVE(Native::DCC_GetInteractionSelectMenuValue)
+// native DCC_GetInteractionMenuValue(DCC_Interaction:interaction, offset, dest[], max_size = sizeof dest);
+AMX_DECLARE_NATIVE(Native::DCC_GetInteractionMenuValue)
 {
-	ScopedDebugInfo dbg_info(amx, "DCC_GetInteractionSelectMenuValue", params, "ddrd");
+	ScopedDebugInfo dbg_info(amx, "DCC_GetInteractionMenuValue", params, "ddrd");
 
 	auto interactionid = static_cast<CommandInteractionId_t>(params[1]);
 	auto const& interaction = CommandInteractionManager::Get()->FindCommandInteraction(interactionid);
@@ -3537,10 +3537,10 @@ AMX_DECLARE_NATIVE(Native::DCC_GetInteractionSelectMenuValue)
 	return amx_SetCppString(amx, params[3], values.at(offset).get<std::string>(), params[4]) == AMX_ERR_NONE;
 }
 
-// native DCC_GetInteractionSelectMenuValueCount(DCC_Interaction:interaction, &count);
-AMX_DECLARE_NATIVE(Native::DCC_GetInteractionSelectMenuValueCount)
+// native DCC_GetInteractionMenuCount(DCC_Interaction:interaction, &count);
+AMX_DECLARE_NATIVE(Native::DCC_GetInteractionMenuCount)
 {
-	ScopedDebugInfo dbg_info(amx, "DCC_GetInteractionSelectMenuValueCount", params, "dr");
+	ScopedDebugInfo dbg_info(amx, "DCC_GetInteractionMenuCount", params, "dr");
 
 	auto interactionid = static_cast<CommandInteractionId_t>(params[1]);
 	auto const& interaction = CommandInteractionManager::Get()->FindCommandInteraction(interactionid);

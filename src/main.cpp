@@ -330,8 +330,8 @@ extern "C" const AMX_NATIVE_INFO native_list[] =
 
 	AMX_DEFINE_NATIVE(DCC_SendChannelMessageEx)
 
-	AMX_DEFINE_NATIVE(DCC_GetInteractionSelectMenuValue)
-	AMX_DEFINE_NATIVE(DCC_GetInteractionSelectMenuValueCount)
+	AMX_DEFINE_NATIVE(DCC_GetInteractionMenuValue)
+	AMX_DEFINE_NATIVE(DCC_GetInteractionMenuCount)
 	AMX_DEFINE_NATIVE(DCC_GetModalInputValue)
 	{ NULL, NULL }
 };
