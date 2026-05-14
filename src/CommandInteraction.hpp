@@ -75,6 +75,7 @@ private:
 	UserId_t m_InteractionUser;
 	std::vector<CommandInteractionOption_t> m_InteractionOptions;
 	std::vector<UserId_t> m_Mentions;
+	bool m_Responded = false;
 };
 
 class CommandInteractionManager : public Singleton<CommandInteractionManager>

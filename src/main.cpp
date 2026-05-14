@@ -84,6 +84,8 @@ PLUGIN_EXPORT bool PLUGIN_CALL Load(void **ppData)
 	pAMXFunctions = ppData[PLUGIN_DATA_AMX_EXPORTS];
 	logprintf = (logprintf_t)ppData[PLUGIN_DATA_LOGPRINTF];
 
+	Logger::Get()->Initialize("dc-connector.log");
+
 	bool ret_val = true;
 	int intents = ALL_INTENTS;
 	auto bot_intentsStr = GetEnvironmentVar("DCC_BOT_INTENTS");

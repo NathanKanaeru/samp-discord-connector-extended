@@ -266,7 +266,7 @@ void CommandInteraction::SendEmbed(EmbedId_t embedid, const std::string message,
 
 void CommandInteraction::SendInteractionMessage(const std::string message, std::vector<ActionRowId_t> const &rows)
 {
-	json data = {
+	json data_content = {
 		{ "content", message }
 	};
 
@@ -279,25 +279,48 @@ void CommandInteraction::SendInteractionMessage(const std::string message, std::
 			if (row)
 				components.push_back(row->ToJson());
 		}
-		data["components"] = components;
+		data_content["components"] = components;
 	}
 
-	std::string json_str;
-	if (!utils::TryDumpJson(data, json_str))
-		Logger::Get()->Log(samplog_LogLevel::ERROR, "can't serialize JSON: {}", json_str);
+	if (!m_Responded)
+	{
+		json data = {
+			{ "type", 4 }, // CHANNEL_MESSAGE_WITH_SOURCE
+			{ "data", data_content }
+		};
 
-	/*/webhooks/{application.id}/{interaction.token}/messages/@original*/
-	Network::Get()->Http().Patch(fmt::format("/webhooks/{:s}/{:s}/messages/@original", ThisBot::Get()->GetApplicationID(), m_Token), json_str);
+		std::string json_str;
+		if (!utils::TryDumpJson(data, json_str))
+			Logger::Get()->Log(samplog_LogLevel::ERROR, "can't serialize JSON: {}", json_str);
+
+		Network::Get()->Http().Post(fmt::format("/interactions/{:s}/{:s}/callback", m_IDSnowflake, m_Token), json_str);
+		m_Responded = true;
+	}
+	else
+	{
+		std::string json_str;
+		if (!utils::TryDumpJson(data_content, json_str))
+			Logger::Get()->Log(samplog_LogLevel::ERROR, "can't serialize JSON: {}", json_str);
+
+		/*/webhooks/{application.id}/{interaction.token}/messages/@original*/
+		Network::Get()->Http().Patch(fmt::format("/webhooks/{:s}/{:s}/messages/@original", ThisBot::Get()->GetApplicationID(), m_Token), json_str);
+	}
 }
 
 void CommandInteraction::SendModal(ModalId_t modalid)
 {
+	if (m_Responded)
+	{
+		Logger::Get()->Log(samplog_LogLevel::ERROR, "Cannot send modal: Interaction has already been responded to.");
+		return;
+	}
+
 	auto const& modal = ModalManager::Get()->FindModal(modalid);
 	if (!modal)
 		return;
 
 	json data = {
-		{ "type", 9 }, // MODAL_SUBMIT (Wait, type 9 is response type for modals)
+		{ "type", 9 }, // MODAL
 		{ "data", modal->ToJson() }
 	};
 
@@ -305,10 +328,9 @@ void CommandInteraction::SendModal(ModalId_t modalid)
 	if (!utils::TryDumpJson(data, json_str))
 		Logger::Get()->Log(samplog_LogLevel::ERROR, "can't serialize JSON: {}", json_str);
 
-	// Modals must be a response to the interaction, not a patch to the original message.
-	// But CommandInteraction current implementation seems to only use PATCH to @original.
-	// Interaction callback for modals is POST /interactions/{id}/{token}/callback
+	// Modals must be a primary response to the interaction.
 	Network::Get()->Http().Post(fmt::format("/interactions/{:s}/{:s}/callback", m_IDSnowflake, m_Token), json_str);
+	m_Responded = true;
 }
 
 CommandInteraction_t const & CommandInteractionManager::FindCommandInteraction(CommandInteractionId_t interaction)

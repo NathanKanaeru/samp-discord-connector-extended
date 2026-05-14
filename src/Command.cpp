@@ -245,20 +245,6 @@ void CommandManager::Initialize()
 		}
 		else if (type == 3 /*message component*/ || type == 5 /*modal submit*/)
 		{
-			// For components and modals, we usually want to acknowledge them.
-			// However, for buttons/menus, we might want to update the message or send a message.
-			// For simplicity, we'll defer the response if it's a component, or just let the user handle it.
-			// Discord requires a response within 3 seconds.
-
-			if (type == 3)
-			{
-				// Defer update
-				json response = { { "type", 6 } }; // DEFERRED_UPDATE_MESSAGE
-				std::string json_str;
-				utils::TryDumpJson(response, json_str);
-				Network::Get()->Http().Post(fmt::format("/interactions/{:s}/{:s}/callback", data.at("id").get<std::string>(), data.at("token").get<std::string>()), json_str);
-			}
-
 			UserId_t userid = 0;
 			std::string meh;
 			bool has_guild = utils::TryGetJsonValue(data, meh, "guild_id");

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <samplog/samplog.hpp>
+#include <fstream>
 #include "Singleton.hpp"
 #include "Error.hpp"
 
@@ -58,9 +59,11 @@ private:
 	Logger() :
 		m_Logger("discord-connector")
 	{ }
-	~Logger() = default;
+	~Logger();
 
 public:
+	void Initialize(const std::string& log_path);
+	void LogToAll(samplog_LogLevel level, const char* msg);
 	inline bool IsLogLevel(samplog_LogLevel level)
 	{
 		return m_Logger.IsLogLevel(level);
@@ -69,7 +72,7 @@ public:
 	template<typename... Args>
 	inline void Log(samplog_LogLevel level, const char *msg)
 	{
-		m_Logger.Log(level, msg);
+		LogToAll(level, msg);
 	}
 
 	template<typename... Args>
@@ -84,6 +87,7 @@ public:
 		const char *msg)
 	{
 		m_Logger.Log(level, msg, callinfo);
+		LogToAll(level, msg);
 	}
 
 	template<typename... Args>
@@ -122,7 +126,7 @@ public:
 
 private:
 	PluginLogger_t m_Logger;
-
+	std::ofstream m_LogFile;
 };
 
 
