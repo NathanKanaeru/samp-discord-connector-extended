@@ -7,6 +7,8 @@
 #include "Channel.hpp"
 #include "Message.hpp"
 #include "Command.hpp"
+#include "Component.hpp"
+#include "Modal.hpp"
 #include "SampConfigReader.hpp"
 #include "Logger.hpp"
 #include "version.hpp"
@@ -26,6 +28,8 @@ void InitializeEverything(std::string const &bot_token, int intents)
 	ChannelManager::Get()->Initialize();
 	MessageManager::Get()->Initialize();
 	CommandManager::Get()->Initialize();
+	ComponentManager::Get()->Initialize();
+	ModalManager::Get()->Initialize();
 	Network::Get()->Initialize(bot_token, intents);
 }
 
@@ -35,6 +39,8 @@ void DestroyEverything()
 	ChannelManager::Singleton::Destroy();
 	UserManager::Singleton::Destroy();
 	GuildManager::Singleton::Destroy();
+	ComponentManager::Singleton::Destroy();
+	ModalManager::Singleton::Destroy();
 	Network::Singleton::Destroy();
 }
 
@@ -311,6 +317,22 @@ extern "C" const AMX_NATIVE_INFO native_list[] =
 	AMX_DEFINE_NATIVE(DCC_SendInteractionEmbed)
 	AMX_DEFINE_NATIVE(DCC_SendInteractionMessage)
 	AMX_DEFINE_NATIVE(DCC_DeleteCommand)
+
+	AMX_DEFINE_NATIVE(DCC_CreateButton)
+	AMX_DEFINE_NATIVE(DCC_CreateSelectMenu)
+	AMX_DEFINE_NATIVE(DCC_AddSelectMenuOption)
+	AMX_DEFINE_NATIVE(DCC_CreateActionRow)
+	AMX_DEFINE_NATIVE(DCC_AddComponentToActionRow)
+
+	AMX_DEFINE_NATIVE(DCC_CreateModal)
+	AMX_DEFINE_NATIVE(DCC_AddModalInput)
+	AMX_DEFINE_NATIVE(DCC_SendInteractionModal)
+
+	AMX_DEFINE_NATIVE(DCC_SendChannelMessageEx)
+
+	AMX_DEFINE_NATIVE(DCC_GetInteractionSelectMenuValue)
+	AMX_DEFINE_NATIVE(DCC_GetInteractionSelectMenuValueCount)
+	AMX_DEFINE_NATIVE(DCC_GetModalInputValue)
 	{ NULL, NULL }
 };
 

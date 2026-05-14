@@ -6,6 +6,7 @@
 #include "Guild.hpp"
 #include "utils.hpp"
 #include "Embed.hpp"
+#include "Component.hpp"
 
 #include "fmt/format.h"
 
@@ -84,11 +85,65 @@ void Channel::UpdateParentChannel(Snowflake_t const &parent_id)
 	m_ParentId = channel->GetPawnId();
 }
 
-void Channel::SendMessage(std::string &&msg, pawn_cb::Callback_t &&cb)
+void Channel::SendMessage(std::string &&msg, pawn_cb::Callback_t &&cb, EmbedId_t embedid, std::vector<ActionRowId_t> const &rows)
 {
 	json data = {
 		{ "content", std::move(msg) }
 	};
+
+	if (embedid != INVALID_EMBED_ID)
+	{
+		auto const& embed = EmbedManager::Get()->FindEmbed(embedid);
+		if (embed)
+		{
+			json e = json::object({
+				{ "title", embed->GetTitle() },
+				{ "description", embed->GetDescription() },
+				{ "url", embed->GetUrl() },
+				{ "timestamp", embed->GetTimestamp() },
+				{ "color", embed->GetColor() },
+				{ "footer", {
+					{"text", embed->GetFooterText()},
+					{"icon_url", embed->GetFooterIconUrl()},
+				} },
+				{ "thumbnail", json::object() },
+				{ "image", json::object() }
+				});
+
+			if (!embed->GetThumbnailUrl().empty())
+				e["thumbnail"]["url"] = embed->GetThumbnailUrl();
+
+			if (!embed->GetImageUrl().empty())
+				e["image"]["url"] = embed->GetImageUrl();
+
+			if (embed->GetFields().size())
+			{
+				json field_array = json::array();
+				for (const auto& i : embed->GetFields())
+				{
+					field_array.push_back({
+						{"name", i._name},
+						{"value", i._value},
+						{"inline", i._inline_}
+						});
+				}
+				e["fields"] = field_array;
+			}
+			data["embeds"] = { e };
+		}
+	}
+
+	if (!rows.empty())
+	{
+		json components = json::array();
+		for (auto row_id : rows)
+		{
+			auto const& row = ComponentManager::Get()->FindActionRow(row_id);
+			if (row)
+				components.push_back(row->ToJson());
+		}
+		data["components"] = components;
+	}
 
 	std::string json_str;
 	if (!utils::TryDumpJson(data, json_str))

@@ -11,6 +11,8 @@
 #include "User.hpp"
 #include "Embed.hpp"
 #include "Http.hpp"
+#include "Component.hpp"
+#include "Modal.hpp"
 #include <json.hpp>
 #include <regex>
 
@@ -28,7 +30,8 @@ namespace
 }
 
 CommandInteraction::CommandInteraction(CommandInteractionId_t id, UserId_t user, nlohmann::json const& interaction_json) :
-	m_InteractionUser(user)
+	m_InteractionUser(user),
+	m_InteractionJson(interaction_json)
 {
 	m_ID = id;
 	m_IDSnowflake = interaction_json.at("id").get<std::string>();
@@ -37,36 +40,50 @@ CommandInteraction::CommandInteraction(CommandInteractionId_t id, UserId_t user,
 	std::string dump;
 	utils::TryDumpJson(interaction_json, dump);
 
-	std::string name = interaction_json.at("data").at("name").get<std::string>();
-	
-	std::string guild_str = "";
-	bool has_guild = utils::TryGetJsonValue(interaction_json.at("data"), guild_str, "guild_id");
-	if (has_guild )
+	if (interaction_json.at("type").get<int>() == 2 /*application command*/)
 	{
+		std::string name = interaction_json.at("data").at("name").get<std::string>();
 		
-		auto & guild = GuildManager::Get()->FindGuildById(guild_str);
-		auto & command = CommandManager::Get()->FindCommand(CommandManager::Get()->FindCommandIdByName(name, guild->GetPawnId()));
-		if (!guild || command->GetGuild() != guild->GetPawnId())
+		std::string guild_str = "";
+		bool has_guild = utils::TryGetJsonValue(interaction_json.at("data"), guild_str, "guild_id");
+		if (has_guild )
 		{
-			Logger::Get()->Log(samplog_LogLevel::WARNING, "recieved a command interaction for command {} (guild {}) but the callee guild doesn't match", name, guild_str);
-			return;
-		}
+			
+			auto & guild = GuildManager::Get()->FindGuildById(guild_str);
+			auto & command = CommandManager::Get()->FindCommand(CommandManager::Get()->FindCommandIdByName(name, guild->GetPawnId()));
+			if (!guild || command->GetGuild() != guild->GetPawnId())
+			{
+				Logger::Get()->Log(samplog_LogLevel::WARNING, "recieved a command interaction for command {} (guild {}) but the callee guild doesn't match", name, guild_str);
+				return;
+			}
 
-		m_Guild = guild->GetPawnId();
+			m_Guild = guild->GetPawnId();
+		}
+		else
+		{
+			auto& command = CommandManager::Get()->FindCommand(CommandManager::Get()->FindCommandIdByName(name));
+			if (!command)
+			{
+				Logger::Get()->Log(samplog_LogLevel::WARNING, "recieved a command interaction for command {} but no command exists", name);
+				return;
+			}
+		}
+		ParseOptions(interaction_json, m_Guild != INVALID_GUILD_ID ? guild_str : "");
 	}
 	else
 	{
-		auto& command = CommandManager::Get()->FindCommand(CommandManager::Get()->FindCommandIdByName(name));
-		if (!command)
+		std::string guild_str = "";
+		if (utils::TryGetJsonValue(interaction_json, guild_str, "guild_id"))
 		{
-			Logger::Get()->Log(samplog_LogLevel::WARNING, "recieved a command interaction for command {} but no command exists", name);
-			return;
+			auto& guild = GuildManager::Get()->FindGuildById(guild_str);
+			if (guild)
+				m_Guild = guild->GetPawnId();
 		}
 	}
 
 	std::string channel_str = interaction_json.at("channel_id").get<std::string>();
 	Channel_t const & channel = ChannelManager::Get()->FindChannelById(channel_str);
-	if (!channel && !has_guild)
+	if (!channel && m_Guild == INVALID_GUILD_ID)
 	{
 		ChannelId_t cid = ChannelManager::Get()->AddDMChannel(interaction_json);
 		m_Channel = ChannelManager::Get()->FindChannel(cid)->GetPawnId();
@@ -76,7 +93,6 @@ CommandInteraction::CommandInteraction(CommandInteractionId_t id, UserId_t user,
 		m_Channel = channel ? channel->GetPawnId() : INVALID_CHANNEL_ID;
 	}
 	m_InteractionUser = user;
-	ParseOptions(interaction_json, has_guild ? guild_str : "");
 }
 
 void CommandInteraction::ParseOptions(nlohmann::json const& interaction_json, std::string const & guildid)
@@ -178,7 +194,7 @@ std::string CommandInteraction::GetContent() const
 	return "";
 }
 
-void CommandInteraction::SendEmbed(EmbedId_t embedid, const std::string message)
+void CommandInteraction::SendEmbed(EmbedId_t embedid, const std::string message, std::vector<ActionRowId_t> const &rows)
 {
 	auto& embed = EmbedManager::Get()->FindEmbed(embedid);
 	json data = {
@@ -228,6 +244,18 @@ void CommandInteraction::SendEmbed(EmbedId_t embedid, const std::string message)
 		data["embeds"][0]["fields"] = field_array;
 	}
 
+	if (!rows.empty())
+	{
+		json components = json::array();
+		for (auto row_id : rows)
+		{
+			auto const& row = ComponentManager::Get()->FindActionRow(row_id);
+			if (row)
+				components.push_back(row->ToJson());
+		}
+		data["components"] = components;
+	}
+
 	std::string json_str;
 	if (!utils::TryDumpJson(data, json_str))
 		Logger::Get()->Log(samplog_LogLevel::ERROR, "can't serialize JSON: {}", json_str);
@@ -236,11 +264,23 @@ void CommandInteraction::SendEmbed(EmbedId_t embedid, const std::string message)
 	Network::Get()->Http().Patch(fmt::format("/webhooks/{:s}/{:s}/messages/@original", ThisBot::Get()->GetApplicationID(), m_Token), json_str);
 }
 
-void CommandInteraction::SendInteractionMessage(const std::string message)
+void CommandInteraction::SendInteractionMessage(const std::string message, std::vector<ActionRowId_t> const &rows)
 {
 	json data = {
 		{ "content", message }
 	};
+
+	if (!rows.empty())
+	{
+		json components = json::array();
+		for (auto row_id : rows)
+		{
+			auto const& row = ComponentManager::Get()->FindActionRow(row_id);
+			if (row)
+				components.push_back(row->ToJson());
+		}
+		data["components"] = components;
+	}
 
 	std::string json_str;
 	if (!utils::TryDumpJson(data, json_str))
@@ -248,6 +288,27 @@ void CommandInteraction::SendInteractionMessage(const std::string message)
 
 	/*/webhooks/{application.id}/{interaction.token}/messages/@original*/
 	Network::Get()->Http().Patch(fmt::format("/webhooks/{:s}/{:s}/messages/@original", ThisBot::Get()->GetApplicationID(), m_Token), json_str);
+}
+
+void CommandInteraction::SendModal(ModalId_t modalid)
+{
+	auto const& modal = ModalManager::Get()->FindModal(modalid);
+	if (!modal)
+		return;
+
+	json data = {
+		{ "type", 9 }, // MODAL_SUBMIT (Wait, type 9 is response type for modals)
+		{ "data", modal->ToJson() }
+	};
+
+	std::string json_str;
+	if (!utils::TryDumpJson(data, json_str))
+		Logger::Get()->Log(samplog_LogLevel::ERROR, "can't serialize JSON: {}", json_str);
+
+	// Modals must be a response to the interaction, not a patch to the original message.
+	// But CommandInteraction current implementation seems to only use PATCH to @original.
+	// Interaction callback for modals is POST /interactions/{id}/{token}/callback
+	Network::Get()->Http().Post(fmt::format("/interactions/{:s}/{:s}/callback", m_IDSnowflake, m_Token), json_str);
 }
 
 CommandInteraction_t const & CommandInteractionManager::FindCommandInteraction(CommandInteractionId_t interaction)

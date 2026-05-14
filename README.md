@@ -5,6 +5,7 @@
 |  ![Build status](https://github.com/maddinat0r/samp-discord-connector/workflows/Build/badge.svg)|  [![All Releases](https://img.shields.io/github/downloads/maddinat0r/samp-discord-connector/total.svg?maxAge=86400)](https://github.com/maddinat0r/samp-discord-connector/releases)  |  [![latest release](https://img.shields.io/github/release/maddinat0r/samp-discord-connector.svg?maxAge=86400)](https://github.com/maddinat0r/samp-discord-connector/releases) <br> [![Github Releases](https://img.shields.io/github/downloads/maddinat0r/samp-discord-connector/latest/total.svg?maxAge=86400)](https://github.com/maddinat0r/samp-discord-connector/releases)  |  
 -------------------------------------------------
 **This plugin allows you to control a Discord bot from within your PAWN script.**
+It supports interaction with channels, messages, users, guilds, roles, embeds, emojis, slash commands, message components (buttons, select menus), and modals.
 
 How to install on a SA:MP server
 --------------------------------

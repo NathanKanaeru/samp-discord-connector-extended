@@ -60,6 +60,10 @@ sampcmake_add_samp_plugin(discord-connector
 	Command.hpp
 	CommandInteraction.cpp
 	CommandInteraction.hpp
+	Component.cpp
+	Component.hpp
+	Modal.cpp
+	Modal.hpp
 	main.cpp
 	misc.hpp
 	natives.cpp

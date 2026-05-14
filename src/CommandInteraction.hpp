@@ -59,14 +59,17 @@ public:
 	}
 
 	CommandInteractionOption const * GetOption(std::size_t offset) const;
+	nlohmann::json const& GetInteractionData() const { return m_InteractionJson; }
 
-	void SendEmbed(EmbedId_t embedid, const std::string message = "");
-	void SendInteractionMessage(const std::string message);
+	void SendEmbed(EmbedId_t embedid, const std::string message = "", std::vector<ActionRowId_t> const &rows = {});
+	void SendInteractionMessage(const std::string message, std::vector<ActionRowId_t> const &rows = {});
+	void SendModal(ModalId_t modalid);
 
 private:
 	CommandInteractionId_t m_ID;
 	Snowflake_t m_IDSnowflake;
 	Snowflake_t m_Token;
+	json m_InteractionJson;
 	ChannelId_t m_Channel;
 	GuildId_t m_Guild = 0;
 	UserId_t m_InteractionUser;

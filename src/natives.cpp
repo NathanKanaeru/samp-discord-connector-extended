@@ -14,6 +14,8 @@
 #include "Emoji.hpp"
 #include "Command.hpp"
 #include "CommandInteraction.hpp"
+#include "Component.hpp"
+#include "Modal.hpp"
 #include <fmt/printf.h>
 #include <unordered_map>
 
@@ -3348,3 +3350,242 @@ AMX_DECLARE_NATIVE(Native::DCC_AddCommandOption)
 {
 	return 1;
 }*/
+// native DCC_Component:DCC_CreateButton(const text[], DCC_ButtonStyle:style, const custom_id[], const url[], bool:disabled, DCC_Emoji:emoji);
+AMX_DECLARE_NATIVE(Native::DCC_CreateButton)
+{
+	ScopedDebugInfo dbg_info(amx, "DCC_CreateButton", params, "sdsdsd");
+
+	auto text = amx_GetCppString(amx, params[1]);
+	auto style = static_cast<ButtonStyle>(params[2]);
+	auto custom_id = amx_GetCppString(amx, params[3]);
+	auto url = amx_GetCppString(amx, params[4]);
+	auto disabled = params[5] != 0;
+	auto emoji = static_cast<EmojiId_t>(params[6]);
+
+	cell ret_val = ComponentManager::Get()->CreateButton(text, style, custom_id, url, disabled, emoji);
+
+	Logger::Get()->LogNative(samplog_LogLevel::DEBUG, "return value: '{}'", ret_val);
+	return ret_val;
+}
+
+// native DCC_Component:DCC_CreateSelectMenu(DCC_ComponentType:type, const custom_id[], const placeholder[], min_values, max_values, bool:disabled);
+AMX_DECLARE_NATIVE(Native::DCC_CreateSelectMenu)
+{
+	ScopedDebugInfo dbg_info(amx, "DCC_CreateSelectMenu", params, "dssddd");
+
+	auto type = static_cast<ComponentType>(params[1]);
+	auto custom_id = amx_GetCppString(amx, params[2]);
+	auto placeholder = amx_GetCppString(amx, params[3]);
+	auto min_values = static_cast<int>(params[4]);
+	auto max_values = static_cast<int>(params[5]);
+	auto disabled = params[6] != 0;
+
+	cell ret_val = ComponentManager::Get()->CreateSelectMenu(type, custom_id, placeholder, min_values, max_values, disabled);
+
+	Logger::Get()->LogNative(samplog_LogLevel::DEBUG, "return value: '{}'", ret_val);
+	return ret_val;
+}
+
+// native bool:DCC_AddSelectMenuOption(DCC_Component:menu, const label[], const value[], const description[], DCC_Emoji:emoji, bool:is_default);
+AMX_DECLARE_NATIVE(Native::DCC_AddSelectMenuOption)
+{
+	ScopedDebugInfo dbg_info(amx, "DCC_AddSelectMenuOption", params, "dsssdd");
+
+	auto menu = static_cast<ComponentId_t>(params[1]);
+	auto label = amx_GetCppString(amx, params[2]);
+	auto value = amx_GetCppString(amx, params[3]);
+	auto description = amx_GetCppString(amx, params[4]);
+	auto emoji = static_cast<EmojiId_t>(params[5]);
+	auto is_default = params[6] != 0;
+
+	cell ret_val = ComponentManager::Get()->AddSelectMenuOption(menu, label, value, description, emoji, is_default) ? 1 : 0;
+
+	Logger::Get()->LogNative(samplog_LogLevel::DEBUG, "return value: '{}'", ret_val);
+	return ret_val;
+}
+
+// native DCC_ActionRow:DCC_CreateActionRow();
+AMX_DECLARE_NATIVE(Native::DCC_CreateActionRow)
+{
+	ScopedDebugInfo dbg_info(amx, "DCC_CreateActionRow", params);
+
+	cell ret_val = ComponentManager::Get()->CreateActionRow();
+
+	Logger::Get()->LogNative(samplog_LogLevel::DEBUG, "return value: '{}'", ret_val);
+	return ret_val;
+}
+
+// native bool:DCC_AddComponentToActionRow(DCC_ActionRow:row, DCC_Component:component);
+AMX_DECLARE_NATIVE(Native::DCC_AddComponentToActionRow)
+{
+	ScopedDebugInfo dbg_info(amx, "DCC_AddComponentToActionRow", params, "dd");
+
+	auto row = static_cast<ActionRowId_t>(params[1]);
+	auto comp = static_cast<ComponentId_t>(params[2]);
+
+	cell ret_val = ComponentManager::Get()->AddComponentToActionRow(row, comp) ? 1 : 0;
+
+	Logger::Get()->LogNative(samplog_LogLevel::DEBUG, "return value: '{}'", ret_val);
+	return ret_val;
+}
+
+// native DCC_Modal:DCC_CreateModal(const title[], const custom_id[]);
+AMX_DECLARE_NATIVE(Native::DCC_CreateModal)
+{
+	ScopedDebugInfo dbg_info(amx, "DCC_CreateModal", params, "ss");
+
+	auto title = amx_GetCppString(amx, params[1]);
+	auto custom_id = amx_GetCppString(amx, params[2]);
+
+	cell ret_val = ModalManager::Get()->CreateModal(title, custom_id);
+
+	Logger::Get()->LogNative(samplog_LogLevel::DEBUG, "return value: '{}'", ret_val);
+	return ret_val;
+}
+
+// native bool:DCC_AddModalInput(DCC_Modal:modal, const custom_id[], DCC_TextInputStyle:style, const label[], min_length, max_length, bool:required, const value[], const placeholder[]);
+AMX_DECLARE_NATIVE(Native::DCC_AddModalInput)
+{
+	ScopedDebugInfo dbg_info(amx, "DCC_AddModalInput", params, "dsdsdddds");
+
+	auto modal = static_cast<ModalId_t>(params[1]);
+	auto custom_id = amx_GetCppString(amx, params[2]);
+	auto style = static_cast<TextInputStyle>(params[3]);
+	auto label = amx_GetCppString(amx, params[4]);
+	auto min_length = static_cast<int>(params[5]);
+	auto max_length = static_cast<int>(params[6]);
+	auto required = params[7] != 0;
+	auto value = amx_GetCppString(amx, params[8]);
+	auto placeholder = amx_GetCppString(amx, params[9]);
+
+	cell ret_val = ModalManager::Get()->AddModalInput(modal, custom_id, style, label, min_length, max_length, required, value, placeholder) ? 1 : 0;
+
+	Logger::Get()->LogNative(samplog_LogLevel::DEBUG, "return value: '{}'", ret_val);
+	return ret_val;
+}
+
+// native DCC_SendInteractionModal(DCC_Interaction:interaction, DCC_Modal:modal);
+AMX_DECLARE_NATIVE(Native::DCC_SendInteractionModal)
+{
+	ScopedDebugInfo dbg_info(amx, "DCC_SendInteractionModal", params, "dd");
+
+	auto interactionid = static_cast<CommandInteractionId_t>(params[1]);
+	auto modalid = static_cast<ModalId_t>(params[2]);
+
+	auto const& interaction = CommandInteractionManager::Get()->FindCommandInteraction(interactionid);
+	if (interaction)
+	{
+		interaction->SendModal(modalid);
+		return 1;
+	}
+
+	return 0;
+}
+
+// native DCC_SendChannelMessageEx(DCC_Channel:channel, const message[], DCC_Embed:embed, DCC_ActionRow:rows[], rows_size, const callback[] = "", const format[] = "", {Float, _}:...);
+AMX_DECLARE_NATIVE(Native::DCC_SendChannelMessageEx)
+{
+	ScopedDebugInfo dbg_info(amx, "DCC_SendChannelMessageEx", params, "dsddds");
+
+	auto channelid = static_cast<ChannelId_t>(params[1]);
+	auto const& channel = ChannelManager::Get()->FindChannel(channelid);
+	if (!channel)
+		return 0;
+
+	auto message = amx_GetCppString(amx, params[2]);
+	auto embedid = static_cast<EmbedId_t>(params[3]);
+	
+	cell* rows_ptr = nullptr;
+	amx_GetAddr(amx, params[4], &rows_ptr);
+	int rows_size = static_cast<int>(params[5]);
+	std::vector<ActionRowId_t> rows;
+	if (rows_ptr && rows_size > 0)
+	{
+		for (int i = 0; i < rows_size; ++i)
+			rows.push_back(static_cast<ActionRowId_t>(rows_ptr[i]));
+	}
+
+	auto cb_name = amx_GetCppString(amx, params[6]);
+	auto cb_format = amx_GetCppString(amx, params[7]);
+
+	pawn_cb::Error cb_error;
+	auto cb = pawn_cb::Callback::Prepare(amx, cb_name.c_str(), cb_format.c_str(), params, 8, cb_error);
+	
+	channel->SendMessage(std::move(message), std::move(cb), embedid, rows);
+	return 1;
+}
+
+// native DCC_GetInteractionSelectMenuValue(DCC_Interaction:interaction, offset, dest[], max_size = sizeof dest);
+AMX_DECLARE_NATIVE(Native::DCC_GetInteractionSelectMenuValue)
+{
+	ScopedDebugInfo dbg_info(amx, "DCC_GetInteractionSelectMenuValue", params, "ddrd");
+
+	auto interactionid = static_cast<CommandInteractionId_t>(params[1]);
+	auto const& interaction = CommandInteractionManager::Get()->FindCommandInteraction(interactionid);
+	if (!interaction)
+		return 0;
+
+	auto const& data = interaction->GetInteractionData();
+	if (data.find("data") == data.end() || data.at("data").find("values") == data.at("data").end())
+		return 0;
+
+	auto const& values = data.at("data").at("values");
+	int offset = static_cast<int>(params[2]);
+	if (offset < 0 || offset >= static_cast<int>(values.size()))
+		return 0;
+
+	return amx_SetCppString(amx, params[3], values.at(offset).get<std::string>(), params[4]) == AMX_ERR_NONE;
+}
+
+// native DCC_GetInteractionSelectMenuValueCount(DCC_Interaction:interaction, &count);
+AMX_DECLARE_NATIVE(Native::DCC_GetInteractionSelectMenuValueCount)
+{
+	ScopedDebugInfo dbg_info(amx, "DCC_GetInteractionSelectMenuValueCount", params, "dr");
+
+	auto interactionid = static_cast<CommandInteractionId_t>(params[1]);
+	auto const& interaction = CommandInteractionManager::Get()->FindCommandInteraction(interactionid);
+	if (!interaction)
+		return 0;
+
+	auto const& data = interaction->GetInteractionData();
+	if (data.find("data") == data.end() || data.at("data").find("values") == data.at("data").end())
+		return 0;
+
+	cell* dest = nullptr;
+	if (amx_GetAddr(amx, params[2], &dest) != AMX_ERR_NONE || dest == nullptr)
+		return 0;
+
+	*dest = static_cast<cell>(data.at("data").at("values").size());
+	return 1;
+}
+
+// native DCC_GetModalInputValue(DCC_Interaction:interaction, const custom_id[], dest[], max_size = sizeof dest);
+AMX_DECLARE_NATIVE(Native::DCC_GetModalInputValue)
+{
+	ScopedDebugInfo dbg_info(amx, "DCC_GetModalInputValue", params, "dsrd");
+
+	auto interactionid = static_cast<CommandInteractionId_t>(params[1]);
+	auto const& interaction = CommandInteractionManager::Get()->FindCommandInteraction(interactionid);
+	if (!interaction)
+		return 0;
+
+	auto const& data = interaction->GetInteractionData();
+	if (data.find("data") == data.end() || data.at("data").find("components") == data.at("data").end())
+		return 0;
+
+	std::string custom_id = amx_GetCppString(amx, params[2]);
+
+	// Modal data structure: data -> components (array of Action Rows) -> components (array of components)
+	for (auto const& row : data.at("data").at("components"))
+	{
+		for (auto const& comp : row.at("components"))
+		{
+			if (comp.at("custom_id").get<std::string>() == custom_id)
+			{
+				return amx_SetCppString(amx, params[3], comp.at("value").get<std::string>(), params[4]) == AMX_ERR_NONE;
+			}
+		}
+	}
+
+	return 0;
+}

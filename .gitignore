@@ -2,6 +2,9 @@ build/
 bin/
 artifact/
 
+# Kiro AI agent context
+AGENT.md
+
 # Compiled Object files
 *.slo
 *.lo

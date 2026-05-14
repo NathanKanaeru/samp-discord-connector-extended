@@ -147,4 +147,20 @@ namespace Native
 	AMX_DECLARE_NATIVE(DCC_SendInteractionEmbed);
 	AMX_DECLARE_NATIVE(DCC_SendInteractionMessage);
 	AMX_DECLARE_NATIVE(DCC_DeleteCommand);
+
+	AMX_DECLARE_NATIVE(DCC_CreateButton);
+	AMX_DECLARE_NATIVE(DCC_CreateSelectMenu);
+	AMX_DECLARE_NATIVE(DCC_AddSelectMenuOption);
+	AMX_DECLARE_NATIVE(DCC_CreateActionRow);
+	AMX_DECLARE_NATIVE(DCC_AddComponentToActionRow);
+
+	AMX_DECLARE_NATIVE(DCC_CreateModal);
+	AMX_DECLARE_NATIVE(DCC_AddModalInput);
+	AMX_DECLARE_NATIVE(DCC_SendInteractionModal);
+
+	AMX_DECLARE_NATIVE(DCC_SendChannelMessageEx);
+
+	AMX_DECLARE_NATIVE(DCC_GetInteractionSelectMenuValue);
+	AMX_DECLARE_NATIVE(DCC_GetInteractionSelectMenuValueCount);
+	AMX_DECLARE_NATIVE(DCC_GetModalInputValue);
 }

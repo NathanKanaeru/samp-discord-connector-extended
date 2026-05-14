@@ -3,6 +3,7 @@
 #include "Singleton.hpp"
 #include "types.hpp"
 #include "Callback.hpp"
+#include <vector>
 
 #include <string>
 #include <atomic>
@@ -91,7 +92,7 @@ public:
 		return m_ParentId;
 	}
 
-	void SendMessage(std::string &&msg, pawn_cb::Callback_t &&cb);
+	void SendMessage(std::string &&msg, pawn_cb::Callback_t &&cb, EmbedId_t embed = INVALID_EMBED_ID, std::vector<ActionRowId_t> const &rows = {});
 	void SendEmbeddedMessage(const Embed_t & embed, std::string&& msg, pawn_cb::Callback_t&& cb);
 	void SetChannelName(std::string const &name);
 	void SetChannelTopic(std::string const &topic);

@@ -201,11 +201,11 @@ void CommandManager::Initialize()
 
 	Network::Get()->WebSocket().RegisterEvent(WebSocket::Event::INTERACTION_CREATE, [this](const json& data)
 	{
-		if (data.find("type") != data.end() && data.at("type").get<int>() == 2 /*application command*/)
+		int type = data.at("type").get<int>();
+		if (type == 2 /*application command*/)
 		{
 			json my_awesome_json;
 			std::string json_str;
-
 
 			my_awesome_json["type"] = 5; // DeferredChannelMessageWithSource
 			if (!utils::TryDumpJson(my_awesome_json, json_str))
@@ -226,18 +226,81 @@ void CommandManager::Initialize()
 			else {
 				userid = UserManager::Get()->AddUser(data["user"]);
 			}
-			
+
 			auto interactionid = CommandInteractionManager::Get()->AddCommandInteraction(userid, data);
 			PawnDispatcher::Get()->Dispatch([userid, interactionid, data]() mutable
 			{
-				auto & interaction = CommandInteractionManager::Get()->FindCommandInteraction(interactionid);
-				auto & command = CommandManager::Get()->FindCommand(CommandManager::Get()->FindCommandIdByName(data.at("data").at("name").get<std::string>(), interaction->GetGuildID()));
+				auto& interaction = CommandInteractionManager::Get()->FindCommandInteraction(interactionid);
+				auto& command = CommandManager::Get()->FindCommand(CommandManager::Get()->FindCommandIdByName(data.at("data").at("name").get<std::string>(), interaction->GetGuildID()));
 				if (interaction && command && userid)
 				{
 					// forward CallbackName(DCC_Interaction:interaction, DCC_User:user);	
 					CommandInteractionManager::Get()->m_CurrentInteractionID = interaction->GetPawnId();
 					pawn_cb::Error error;
-					pawn_cb::Callback::CallFirst(error, command->GetCallback().c_str(), interaction->GetPawnId(), userid);	
+					pawn_cb::Callback::CallFirst(error, command->GetCallback().c_str(), interaction->GetPawnId(), userid);
+					CommandInteractionManager::Get()->m_CurrentInteractionID = INVALID_COMMAND_INTERACTION_ID;
+				}
+				CommandInteractionManager::Get()->DeleteCommandInteraction(interaction->GetPawnId());
+			});
+		}
+		else if (type == 3 /*message component*/ || type == 5 /*modal submit*/)
+		{
+			// For components and modals, we usually want to acknowledge them.
+			// However, for buttons/menus, we might want to update the message or send a message.
+			// For simplicity, we'll defer the response if it's a component, or just let the user handle it.
+			// Discord requires a response within 3 seconds.
+
+			if (type == 3)
+			{
+				// Defer update
+				json response = { { "type", 6 } }; // DEFERRED_UPDATE_MESSAGE
+				std::string json_str;
+				utils::TryDumpJson(response, json_str);
+				Network::Get()->Http().Post(fmt::format("/interactions/{:s}/{:s}/callback", data.at("id").get<std::string>(), data.at("token").get<std::string>()), json_str);
+			}
+
+			UserId_t userid = 0;
+			std::string meh;
+			bool has_guild = utils::TryGetJsonValue(data, meh, "guild_id");
+			if (has_guild) {
+				userid = UserManager::Get()->AddUser(data["member"]["user"]);
+			}
+			else {
+				userid = UserManager::Get()->AddUser(data["user"]);
+			}
+
+			auto interactionid = CommandInteractionManager::Get()->AddCommandInteraction(userid, data);
+			PawnDispatcher::Get()->Dispatch([userid, interactionid, data, type]() mutable
+			{
+				auto& interaction = CommandInteractionManager::Get()->FindCommandInteraction(interactionid);
+				if (interaction && userid)
+				{
+					CommandInteractionManager::Get()->m_CurrentInteractionID = interaction->GetPawnId();
+					pawn_cb::Error error;
+
+					std::string custom_id = data.at("data").at("custom_id").get<std::string>();
+
+					if (type == 3)
+					{
+						int component_type = data.at("data").at("component_type").get<int>();
+						if (component_type == 2) // Button
+						{
+							// forward DCC_OnInteraction(DCC_Interaction:interaction, DCC_User:user, DCC_InteractionType:type, const custom_id[]);
+							pawn_cb::Callback::CallFirst(error, "DCC_OnInteraction", interaction->GetPawnId(), userid, type, custom_id.c_str());
+						}
+						else if (component_type >= 3 && component_type <= 8) // Select Menus
+						{
+							// For select menus, we might want a specific callback with values
+							// forward DCC_OnInteraction(DCC_Interaction:interaction, DCC_User:user, DCC_InteractionType:type, const custom_id[]);
+							pawn_cb::Callback::CallFirst(error, "DCC_OnInteraction", interaction->GetPawnId(), userid, type, custom_id.c_str());
+						}
+					}
+					else if (type == 5) // Modal Submit
+					{
+						// forward DCC_OnInteraction(DCC_Interaction:interaction, DCC_User:user, DCC_InteractionType:type, const custom_id[]);
+						pawn_cb::Callback::CallFirst(error, "DCC_OnInteraction", interaction->GetPawnId(), userid, type, custom_id.c_str());
+					}
+
 					CommandInteractionManager::Get()->m_CurrentInteractionID = INVALID_COMMAND_INTERACTION_ID;
 				}
 				CommandInteractionManager::Get()->DeleteCommandInteraction(interaction->GetPawnId());
