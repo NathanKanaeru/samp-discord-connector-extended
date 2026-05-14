@@ -7,23 +7,21 @@ on:
       - "v*.*.*"
     branches:
       - "master"
-    paths:
-      - "**.hpp"
-      - "**.cpp"
-      - "**.h"
-      - "**.c"
-      - "**CMakeLists.txt"
-      - ".github/workflows/build.yml"
+      - "main"
+    paths-ignore:
+      - "**.md"
+      - "wiki/**"
+      - "LICENSE"
+      - ".gitignore"
   pull_request:
     branches:
       - "master"
-    paths:
-      - "**.hpp"
-      - "**.cpp"
-      - "**.h"
-      - "**.c"
-      - "**CMakeLists.txt"
-      - ".github/workflows/build.yml"
+      - "main"
+    paths-ignore:
+      - "**.md"
+      - "wiki/**"
+      - "LICENSE"
+      - ".gitignore"
 
 jobs:
   build:

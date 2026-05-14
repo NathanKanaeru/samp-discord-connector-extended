@@ -1,40 +1,59 @@
-# Discord connector plugin for San Andreas Multiplayer (SA:MP)
+# SA:MP Discord Connector Extended
 
-| AppVeyor CI | Total downloads | Latest release |
-| :---: | :---: | :---: |
-|  ![Build status](https://github.com/maddinat0r/samp-discord-connector/workflows/Build/badge.svg)|  [![All Releases](https://img.shields.io/github/downloads/maddinat0r/samp-discord-connector/total.svg?maxAge=86400)](https://github.com/maddinat0r/samp-discord-connector/releases)  |  [![latest release](https://img.shields.io/github/release/maddinat0r/samp-discord-connector.svg?maxAge=86400)](https://github.com/maddinat0r/samp-discord-connector/releases) <br> [![Github Releases](https://img.shields.io/github/downloads/maddinat0r/samp-discord-connector/latest/total.svg?maxAge=86400)](https://github.com/maddinat0r/samp-discord-connector/releases)  |  
--------------------------------------------------
-**This plugin allows you to control a Discord bot from within your PAWN script.**
-It supports interaction with channels, messages, users, guilds, roles, embeds, emojis, slash commands, message components (buttons, select menus), and modals.
+[![Build](https://github.com/NathanKanaeru/samp-discord-connector-extended/workflows/Build/badge.svg)](https://github.com/NathanKanaeru/samp-discord-connector-extended/actions)
+[![Latest Release](https://img.shields.io/github/release/NathanKanaeru/samp-discord-connector-extended.svg)](https://github.com/NathanKanaeru/samp-discord-connector-extended/releases)
+[![License](https://img.shields.io/github/license/NathanKanaeru/samp-discord-connector-extended.svg)](LICENSE)
 
-How to install on a SA:MP server
---------------------------------
-1. Extract the content of the downloaded archive into the root directory of your SA-MP server.
-2. Edit the server configuration (*server.cfg*) as follows:
-   - Windows: `plugins discord-connector`
-   - Linux: `plugins discord-connector.so`
-3. Add `discord_bot_token YOURDISCORDBOTTOKEN` to your *server.cfg* file, or set it in the environment variable `DCC_BOT_TOKEN` (__never share your bot token with anyone!__)
+**SA:MP Discord Connector Extended** is an enhanced version of the original Discord connector for San Andreas Multiplayer. This version provides full support for modern Discord UI features, allowing you to create a truly interactive bridge between your game server and Discord community.
 
-I am getting a intent error, how do I fix it?
----------------
-If you're getting an intent error, you need to go to the [discord developer dashboard](https://discord.com/developers/applications) and select your bot.
-Then, you need to go to your bot settings and activate your intents.
+## 🚀 Key Features
+*   **Full Interaction Support**: Native support for **Buttons** and **Select Menus**.
+*   **Pop-up Forms**: Implementation of **Modals** for structured user input.
+*   **Modern API**: Fully compatible with Discord API v10 and Slash Commands.
+*   **Rich Layouts**: Multi-row support using **Action Rows**.
+*   **Comprehensive Coverage**: Includes all original features (Channels, Messages, Users, Guilds, Roles, Embeds, Emojis).
 
-Build instruction
----------------
-*Note*: The plugin has to be a 32-bit library; that means all required libraries have to be compiled in 32-bit and the compiler has to support 32-bit.
-#### Windows
-1. install a C++ compiler of your choice
-2. install [CMake](http://www.cmake.org/)
-3. install [Conan](https://conan.io)
-4. clone this repository recursively (`git clone --recursive https://...`)
-5. create a folder named `build` and execute CMake in there
-6. build the generated project files with your C++ compiler
+## 🛠️ Installation
+1.  Download the latest release for your OS from the [Releases](https://github.com/NathanKanaeru/samp-discord-connector-extended/releases) page.
+2.  Extract the plugin (`.dll` or `.so`) to your server's `plugins/` folder.
+3.  Add `discord-connector` to your `server.cfg`.
+4.  Copy `discord-connector.inc` to your `pawno/include/` directory.
+5.  Configure your bot token in `server.cfg`:
+    ```cfg
+    discord_bot_token YOUR_SECRET_TOKEN
+    discord_bot_intents 131071
+    ```
 
-#### Linux
-1. install a C++ compiler of your choice
-2. install [CMake](http://www.cmake.org/)
-3. install [Conan](https://conan.io)
-4. clone this repository recursively (`git clone --recursive https://...`)
-5. create a folder named `build` and execute CMake in there (`mkdir build && cd build && cmake ..`)
-6. build the generated project files with your C++ compiler
+## 📖 Documentation
+For detailed guides on how to use the new interactive components, please visit our **[GitHub Wiki](https://github.com/NathanKanaeru/samp-discord-connector-extended/wiki)**.
+
+### Quick Example (Button)
+```pawn
+public OnGameModeInit() {
+    new DCC_Component:btn = DCC_CreateButton("Verify Me", DCC_STYLE_SUCCESS, "verify_btn");
+    new DCC_ActionRow:row = DCC_CreateActionRow();
+    DCC_AddComponentToActionRow(row, btn);
+    // ... send message with row
+}
+```
+
+## 🏗️ Build Instructions
+The plugin must be compiled as a **32-bit** library.
+1.  Install a C++ compiler (MSVC for Windows, GCC for Linux).
+2.  Install [CMake](http://www.cmake.org/) and [Conan](https://conan.io) (v1.x).
+3.  Clone recursively: `git clone --recursive https://github.com/NathanKanaeru/samp-discord-connector-extended.git`
+4.  Build using CMake:
+    ```bash
+    mkdir build && cd build
+    cmake .. -A Win32 # On Windows
+    cmake --build . --config Release
+    ```
+
+## 📜 Credits & Contributors
+*   **maddinat0r**: Original author of the `samp-discord-connector` plugin.
+*   **NathanKanaeru**: Lead developer and contributor for the **Extended** version (Interactive Components & Modals support).
+*   **SA:MP Team**: For the original San Andreas Multiplayer platform.
+*   **All Contributors**: Everyone who has submitted bug reports and patches.
+
+---
+Licensed under the [Zlib License](LICENSE).
