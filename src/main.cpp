@@ -323,11 +323,14 @@ extern "C" const AMX_NATIVE_INFO native_list[] =
 	AMX_DEFINE_NATIVE(DCC_CreateButton)
 	AMX_DEFINE_NATIVE(DCC_CreateSelectMenu)
 	AMX_DEFINE_NATIVE(DCC_AddSelectMenuOption)
+	AMX_DEFINE_NATIVE(DCC_CreateTextInput)
+	AMX_DEFINE_NATIVE(DCC_CreateFileUpload)
 	AMX_DEFINE_NATIVE(DCC_CreateActionRow)
 	AMX_DEFINE_NATIVE(DCC_AddComponentToActionRow)
 
 	AMX_DEFINE_NATIVE(DCC_CreateModal)
 	AMX_DEFINE_NATIVE(DCC_AddModalInput)
+	AMX_DEFINE_NATIVE(DCC_AddModalComponent)
 	AMX_DEFINE_NATIVE(DCC_SendInteractionModal)
 
 	AMX_DEFINE_NATIVE(DCC_SendChannelMessageEx)
@@ -335,6 +338,11 @@ extern "C" const AMX_NATIVE_INFO native_list[] =
 	AMX_DEFINE_NATIVE(DCC_GetInteractionMenuValue)
 	AMX_DEFINE_NATIVE(DCC_GetInteractionMenuCount)
 	AMX_DEFINE_NATIVE(DCC_GetModalInputValue)
+	AMX_DEFINE_NATIVE(DCC_GetModalSelectCount)
+	AMX_DEFINE_NATIVE(DCC_GetModalSelectValue)
+	AMX_DEFINE_NATIVE(DCC_GetModalAttachmentCount)
+	AMX_DEFINE_NATIVE(DCC_GetModalAttachmentId)
+	AMX_DEFINE_NATIVE(DCC_GetModalAttachmentUrl)
 	{ NULL, NULL }
 };
 

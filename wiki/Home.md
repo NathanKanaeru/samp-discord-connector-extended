@@ -1,48 +1,119 @@
-# Welcome to SA:MP Discord Connector Extended
+# Welcome to SA-MP Discord Connector — Extended
 
-**SA:MP Discord Connector Extended** is a high-performance plugin that bridges your SA:MP (San Andreas Multiplayer) server with Discord. It leverages the latest Discord API features, providing a rich, interactive experience with Buttons, Select Menus, Modals, and Slash Commands.
+A SA-MP / open.mp plugin that bridges your game server with the Discord v10 API. It maintains a persistent gateway connection so your gamemode can react to chat events, and a REST client so it can send messages, build interactive UIs, manage members, and run slash commands.
 
-## Table of Contents
-* [Getting Started](Home#getting-started)
-    * [Requirements](Home#requirements)
-    * [Installation](Home#installation)
-    * [Configuration](Home#configuration)
-* [Interactive Features](Home#interactive-features)
-    * [[Message Components]](Message-Components) (Buttons & Menus)
-    * [[Modals]](Modals) (Pop-up Forms)
-    * [[Slash Commands]](Slash-Commands)
-* [Reference](Home#reference)
-    * [[Full API Reference]](API-Reference)
-    * [[Callbacks Guide]](Callbacks)
+## Index
 
----
+* [[Getting Started]] — install, configure, write your first handler.
+* **Discord objects**
+  * [[Channels]] — find / create / edit / delete text and voice channels.
+  * [[Messages]] — post, edit, cache, and listen to messages.
+  * [[Users]] — read user identity and metadata.
+  * [[Roles]] — inspect and update roles.
+  * [[Guilds]] — manage members, roles, channels, bans, and voice.
+  * [[Bot]] — set the bot's presence, activity, nickname, typing indicator, and open DMs.
+  * [[Emojis and Reactions]] — add or remove reactions, listen for reaction events.
+  * [[Embeds]] — build rich embeds with fields, footer, thumbnail, image.
+* **Interactivity**
+  * [[Slash Commands]] — register `/commands` with typed options and sub-commands.
+  * [[Message Components]] — buttons and 5 types of select menus.
+  * [[Modals]] — pop-up forms with text inputs, select menus, and file uploads.
+  * [[Interactions]] — read and respond to every kind of interaction event.
+* **Reference**
+  * [[Callbacks]] — every `forward` the plugin can fire.
+  * [[Constants]] — enums and `#define`s exported by the include file.
+  * [[API Reference]] — every native, grouped by topic, with signatures.
+  * [[Troubleshooting]] — diagnose silent failures and Discord 4xx errors.
 
-## Getting Started
+## What this plugin gives you
 
-### Requirements
-* **SA:MP Server**: Version 0.3.7 or Open.MP.
-* **Discord Bot**: Created via the [Discord Developer Portal](https://discord.com/developers/applications).
-* **Gateway Intents**: The following **Privileged Intents** must be enabled in the Developer Portal:
-    * `Presence Intent`
-    * `Server Members Intent`
-    * `Message Content Intent` (Required for reading commands and text)
+* Persistent gateway WebSocket with automatic reconnect and intent control.
+* All modern Discord v10 surface area exposed to Pawn:
+  * Channels, messages, embeds, reactions, users, roles, guild membership, voice channels, bans.
+  * Slash commands with global or per-guild scope, sub-commands, and typed options.
+  * Buttons (5 styles), select menus (5 types), modals with text inputs / selects / file uploads.
+  * Bot presence, activity, typing indicator, private DMs.
+* Eager validation of payloads — every component is checked locally first, and Discord's `400 Bad Request` body is logged at `WARNING` level so silent rejections become visible.
 
-### Installation
-1. Download the latest release (`.dll` for Windows, `.so` for Linux).
-2. Place the plugin file in your server's `plugins/` directory.
-3. Add `discord-connector` to the `plugins` line in your `server.cfg`.
-4. Copy `discord-connector.inc` to your `pawno/include/` directory.
+## Requirements
 
-### Configuration
-Configure your bot by adding these lines to your `server.cfg`:
+* **Server** — SA-MP 0.3.7 R2/R3 or open.mp.
+* **Architecture** — 32-bit (i386 / x86) plugin that matches the SA-MP server runtime.
+* **Discord bot** — created at the [Discord Developer Portal](https://discord.com/developers/applications). Enable any privileged intents your gamemode actually needs:
+  * **Server Members Intent** — needed for `DCC_OnGuildMemberAdd / Update / Remove`.
+  * **Message Content Intent** — needed to read user-typed message text.
+  * **Presence Intent** — needed for `DCC_GetGuildMemberStatus`.
+
+## Installing the plugin
+
+1. Download the latest release for your OS from the [releases page](https://github.com/NathanKanaeru/samp-discord-connector-extended/releases).
+2. Drop the binary into your server's `plugins/` directory:
+   * Linux → `discord-connector.so`
+   * Windows → `discord-connector.dll`
+3. Copy `discord-connector.inc` into your `pawno/include/` folder.
+4. Add `discord-connector` to the `plugins` line of `server.cfg`:
+   ```cfg
+   plugins discord-connector
+   ```
+5. Configure the bot token (next section), restart the server, watch the log for
+   `discord-connector: <version> successfully loaded.`
+
+## Configuring the bot
+
+You can configure the bot from `server.cfg` **or** through environment variables. Environment variables take precedence — that is useful for CI / Docker / systemd setups where you do not want to commit secrets.
+
+### `server.cfg`
 ```cfg
-discord_bot_token YOUR_SECRET_TOKEN
-discord_bot_intents 131071 # Enables all intents for full functionality
+discord_bot_token   YOUR_BOT_TOKEN
+discord_bot_intents 131071    ; bitmask of gateway intents — 131071 = all
 ```
 
-## Interactive Features
-This plugin allows your PAWN scripts to control Discord entities as if they were native game elements:
-* **Buttons & Menus**: Create dynamic UIs directly in Discord messages.
-* **Modals**: Gather structured data from users via pop-up forms.
-* **Slash Commands**: Register and handle modern `/` commands with auto-completion support.
-* **Embeds**: Send beautiful, formatted rich-text messages.
+### Environment variables
+| Variable          | Purpose                                                            |
+|-------------------|--------------------------------------------------------------------|
+| `DCC_BOT_TOKEN`   | Discord bot token (overrides `discord_bot_token`).                 |
+| `DCC_BOT_INTENTS` | Gateway intents bitmask (overrides `discord_bot_intents`, default 131071). |
+
+### Required scopes / permissions
+When you generate the bot invite URL, include at minimum:
+
+* Scopes — `bot`, `applications.commands`.
+* Permissions — *View Channels*, *Send Messages*, *Read Message History*,
+  *Add Reactions*, *Use Application Commands*.
+* Add anything else your gamemode actually does (kick, ban, manage roles,
+  manage channels, …).
+
+## A 30-second sanity check
+
+```pawn
+#include <a_samp>
+#include <discord-connector>
+
+public OnGameModeInit()
+{
+    SetGameModeText("Discord-connected RP");
+    new DCC_Channel:ch = DCC_FindChannelByName("general");
+    if (ch != DCC_INVALID_CHANNEL)
+        DCC_SendChannelMessage(ch, "Server is online.");
+    return 1;
+}
+
+public DCC_OnChannelMessage(DCC_Message:message)
+{
+    new content[256];
+    DCC_GetMessageContent(message, content);
+
+    if (!strcmp(content, "!ping"))
+    {
+        new DCC_Channel:ch;
+        DCC_GetMessageChannel(message, ch);
+        DCC_SendChannelMessage(ch, "pong!");
+    }
+    return 1;
+}
+```
+
+If `Server is online.` appears in your `#general` channel and `!ping` answers
+with `pong!`, the plugin is wired up correctly. From there, jump to
+[[Getting Started]] for a complete walkthrough, or pick the topic you need from
+the index above.

@@ -358,13 +358,47 @@ void Http::SendRequest(beast::http::verb const method, std::string const &url,
 
 	SharedRequest_t req = PrepareRequest(method, url, content, use_api);
 
-	if (callback == nullptr && Logger::Get()->IsLogLevel(samplog_LogLevel::DEBUG))
+	auto method_str = beast::http::to_string(method).to_string();
+	if (callback == nullptr)
 	{
-		callback = CreateResponseCallback([=](Response r)
+		// Always intercept the response so non-2xx replies are surfaced. Without
+		// this, Discord errors (e.g. invalid component payloads -> 400) were
+		// silently swallowed for fire-and-forget calls, leaving callers wondering
+		// why their button or modal never showed up. We still keep the DEBUG log
+		// for successful / verbose tracing.
+		callback = CreateResponseCallback([method_str, url, content](Response r)
 		{
-			Logger::Get()->Log(samplog_LogLevel::DEBUG, "{:s} {:s} [{:s}] --> {:d} {:s}: {:s}",
-				beast::http::to_string(method).to_string(), url, content, r.status, r.reason, r.body);
+			if (r.status / 100 != 2)
+			{
+				Logger::Get()->Log(samplog_LogLevel::WARNING,
+					"{:s} {:s} --> {:d} {:s}: {:s}",
+					method_str, url, r.status, r.reason, r.body);
+			}
+			else if (Logger::Get()->IsLogLevel(samplog_LogLevel::DEBUG))
+			{
+				Logger::Get()->Log(samplog_LogLevel::DEBUG,
+					"{:s} {:s} [{:s}] --> {:d} {:s}: {:s}",
+					method_str, url, content, r.status, r.reason, r.body);
+			}
 		});
+	}
+	else if (Logger::Get()->IsLogLevel(samplog_LogLevel::WARNING))
+	{
+		// Wrap the user-supplied callback so its error responses are also
+		// reported to the log even if the user code ignores them.
+		auto inner = std::move(callback);
+		callback = [inner, method_str, url](Streambuf_t &sb, Response_t &resp)
+		{
+			int status = resp.result_int();
+			if (status / 100 != 2)
+			{
+				Logger::Get()->Log(samplog_LogLevel::WARNING,
+					"{:s} {:s} --> {:d} {:s}: {:s}",
+					method_str, url, status, resp.reason().to_string(),
+					beast::buffers_to_string(resp.body().data()));
+			}
+			inner(sb, resp);
+		};
 	}
 
 	m_Queue.push(new QueueEntry(req, std::move(callback)));

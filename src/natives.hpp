@@ -151,11 +151,14 @@ namespace Native
 	AMX_DECLARE_NATIVE(DCC_CreateButton);
 	AMX_DECLARE_NATIVE(DCC_CreateSelectMenu);
 	AMX_DECLARE_NATIVE(DCC_AddSelectMenuOption);
+	AMX_DECLARE_NATIVE(DCC_CreateTextInput);
+	AMX_DECLARE_NATIVE(DCC_CreateFileUpload);
 	AMX_DECLARE_NATIVE(DCC_CreateActionRow);
 	AMX_DECLARE_NATIVE(DCC_AddComponentToActionRow);
 
 	AMX_DECLARE_NATIVE(DCC_CreateModal);
 	AMX_DECLARE_NATIVE(DCC_AddModalInput);
+	AMX_DECLARE_NATIVE(DCC_AddModalComponent);
 	AMX_DECLARE_NATIVE(DCC_SendInteractionModal);
 
 	AMX_DECLARE_NATIVE(DCC_SendChannelMessageEx);
@@ -163,4 +166,9 @@ namespace Native
 	AMX_DECLARE_NATIVE(DCC_GetInteractionMenuValue);
 	AMX_DECLARE_NATIVE(DCC_GetInteractionMenuCount);
 	AMX_DECLARE_NATIVE(DCC_GetModalInputValue);
+	AMX_DECLARE_NATIVE(DCC_GetModalSelectCount);
+	AMX_DECLARE_NATIVE(DCC_GetModalSelectValue);
+	AMX_DECLARE_NATIVE(DCC_GetModalAttachmentCount);
+	AMX_DECLARE_NATIVE(DCC_GetModalAttachmentId);
+	AMX_DECLARE_NATIVE(DCC_GetModalAttachmentUrl);
 }

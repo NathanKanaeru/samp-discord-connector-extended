@@ -18,6 +18,7 @@
 #include "Modal.hpp"
 #include <fmt/printf.h>
 #include <unordered_map>
+#include <functional>
 
 #ifdef ERROR
 #undef ERROR
@@ -3353,7 +3354,7 @@ AMX_DECLARE_NATIVE(Native::DCC_AddCommandOption)
 // native DCC_Component:DCC_CreateButton(const text[], DCC_ButtonStyle:style, const custom_id[], const url[], bool:disabled, DCC_Emoji:emoji);
 AMX_DECLARE_NATIVE(Native::DCC_CreateButton)
 {
-	ScopedDebugInfo dbg_info(amx, "DCC_CreateButton", params, "sdsdsd");
+	ScopedDebugInfo dbg_info(amx, "DCC_CreateButton", params, "sdssdd");
 
 	auto text = amx_GetCppString(amx, params[1]);
 	auto style = static_cast<ButtonStyle>(params[2]);
@@ -3363,6 +3364,13 @@ AMX_DECLARE_NATIVE(Native::DCC_CreateButton)
 	auto emoji = static_cast<EmojiId_t>(params[6]);
 
 	cell ret_val = ComponentManager::Get()->CreateButton(text, style, custom_id, url, disabled, emoji);
+
+	// Validate eagerly so misconfiguration shows up here instead of as a
+	// silent 400 once the message is sent. Validation only logs - the
+	// component is still created so callers can patch and retry.
+	auto const& comp = ComponentManager::Get()->FindComponent(ret_val);
+	if (comp)
+		(void)comp->Validate();
 
 	Logger::Get()->LogNative(samplog_LogLevel::DEBUG, "return value: '{}'", ret_val);
 	return ret_val;
@@ -3399,6 +3407,51 @@ AMX_DECLARE_NATIVE(Native::DCC_AddSelectMenuOption)
 	auto is_default = params[6] != 0;
 
 	cell ret_val = ComponentManager::Get()->AddSelectMenuOption(menu, label, value, description, emoji, is_default) ? 1 : 0;
+
+	Logger::Get()->LogNative(samplog_LogLevel::DEBUG, "return value: '{}'", ret_val);
+	return ret_val;
+}
+
+// native DCC_Component:DCC_CreateTextInput(const custom_id[], DCC_TextInputStyle:style, const label[], min_length = -1, max_length = -1, bool:required = true, const value[] = "", const placeholder[] = "");
+AMX_DECLARE_NATIVE(Native::DCC_CreateTextInput)
+{
+	ScopedDebugInfo dbg_info(amx, "DCC_CreateTextInput", params, "sdsdddss");
+
+	auto custom_id  = amx_GetCppString(amx, params[1]);
+	auto style      = static_cast<TextInputStyle>(params[2]);
+	auto label      = amx_GetCppString(amx, params[3]);
+	auto min_length = static_cast<int>(params[4]);
+	auto max_length = static_cast<int>(params[5]);
+	auto required   = params[6] != 0;
+	auto value      = amx_GetCppString(amx, params[7]);
+	auto placeholder= amx_GetCppString(amx, params[8]);
+
+	cell ret_val = ComponentManager::Get()->CreateTextInput(
+		custom_id, style, label, min_length, max_length, required, value, placeholder);
+
+	auto const& comp = ComponentManager::Get()->FindComponent(ret_val);
+	if (comp)
+		(void)comp->Validate();
+
+	Logger::Get()->LogNative(samplog_LogLevel::DEBUG, "return value: '{}'", ret_val);
+	return ret_val;
+}
+
+// native DCC_Component:DCC_CreateFileUpload(const custom_id[], min_values = 1, max_values = 1, bool:required = true);
+AMX_DECLARE_NATIVE(Native::DCC_CreateFileUpload)
+{
+	ScopedDebugInfo dbg_info(amx, "DCC_CreateFileUpload", params, "sddd");
+
+	auto custom_id = amx_GetCppString(amx, params[1]);
+	auto min_v     = static_cast<int>(params[2]);
+	auto max_v     = static_cast<int>(params[3]);
+	auto required  = params[4] != 0;
+
+	cell ret_val = ComponentManager::Get()->CreateFileUpload(custom_id, min_v, max_v, required);
+
+	auto const& comp = ComponentManager::Get()->FindComponent(ret_val);
+	if (comp)
+		(void)comp->Validate();
 
 	Logger::Get()->LogNative(samplog_LogLevel::DEBUG, "return value: '{}'", ret_val);
 	return ret_val;
@@ -3446,7 +3499,7 @@ AMX_DECLARE_NATIVE(Native::DCC_CreateModal)
 // native bool:DCC_AddModalInput(DCC_Modal:modal, const custom_id[], DCC_TextInputStyle:style, const label[], min_length, max_length, bool:required, const value[], const placeholder[]);
 AMX_DECLARE_NATIVE(Native::DCC_AddModalInput)
 {
-	ScopedDebugInfo dbg_info(amx, "DCC_AddModalInput", params, "dsdsdddds");
+	ScopedDebugInfo dbg_info(amx, "DCC_AddModalInput", params, "dsdsdddss");
 
 	auto modal = static_cast<ModalId_t>(params[1]);
 	auto custom_id = amx_GetCppString(amx, params[2]);
@@ -3464,6 +3517,28 @@ AMX_DECLARE_NATIVE(Native::DCC_AddModalInput)
 	return ret_val;
 }
 
+// native bool:DCC_AddModalComponent(DCC_Modal:modal, DCC_Component:component, const label[] = "", const description[] = "");
+//
+// Adds any input-style component (text input, select menu, file upload) to a
+// modal. The `label` / `description` arguments only apply to non-text-input
+// components - they are surfaced as the visible Label wrapper text. Pass empty
+// strings to keep the historic Action Row layout (text inputs only).
+AMX_DECLARE_NATIVE(Native::DCC_AddModalComponent)
+{
+	ScopedDebugInfo dbg_info(amx, "DCC_AddModalComponent", params, "ddss");
+
+	auto modal     = static_cast<ModalId_t>(params[1]);
+	auto component = static_cast<ComponentId_t>(params[2]);
+	auto label     = amx_GetCppString(amx, params[3]);
+	auto description = amx_GetCppString(amx, params[4]);
+
+	cell ret_val = ModalManager::Get()->AddModalComponent(modal, component,
+		std::move(label), std::move(description)) ? 1 : 0;
+
+	Logger::Get()->LogNative(samplog_LogLevel::DEBUG, "return value: '{}'", ret_val);
+	return ret_val;
+}
+
 // native DCC_SendInteractionModal(DCC_Interaction:interaction, DCC_Modal:modal);
 AMX_DECLARE_NATIVE(Native::DCC_SendInteractionModal)
 {
@@ -3472,6 +3547,16 @@ AMX_DECLARE_NATIVE(Native::DCC_SendInteractionModal)
 	auto interactionid = static_cast<CommandInteractionId_t>(params[1]);
 	auto modalid = static_cast<ModalId_t>(params[2]);
 
+	auto const& modal = ModalManager::Get()->FindModal(modalid);
+	if (!modal)
+	{
+		Logger::Get()->LogNative(samplog_LogLevel::ERROR,
+			"invalid modal id '{}'", modalid);
+		return 0;
+	}
+	if (!modal->Validate())
+		return 0;
+
 	auto const& interaction = CommandInteractionManager::Get()->FindCommandInteraction(interactionid);
 	if (interaction)
 	{
@@ -3479,39 +3564,84 @@ AMX_DECLARE_NATIVE(Native::DCC_SendInteractionModal)
 		return 1;
 	}
 
+	Logger::Get()->LogNative(samplog_LogLevel::ERROR,
+		"invalid interaction id '{}'", interactionid);
 	return 0;
 }
 
 // native DCC_SendChannelMessageEx(DCC_Channel:channel, const message[], DCC_Embed:embed, DCC_ActionRow:rows[], rows_size, const callback[] = "", const format[] = "", {Float, _}:...);
 AMX_DECLARE_NATIVE(Native::DCC_SendChannelMessageEx)
 {
-	ScopedDebugInfo dbg_info(amx, "DCC_SendChannelMessageEx", params, "dsddds");
+	ScopedDebugInfo dbg_info(amx, "DCC_SendChannelMessageEx", params, "dsdadss");
 
 	auto channelid = static_cast<ChannelId_t>(params[1]);
 	auto const& channel = ChannelManager::Get()->FindChannel(channelid);
 	if (!channel)
+	{
+		Logger::Get()->LogNative(samplog_LogLevel::ERROR, "invalid channel id '{}'", channelid);
 		return 0;
+	}
 
 	auto message = amx_GetCppString(amx, params[2]);
+	if (message.length() > 2000)
+	{
+		Logger::Get()->LogNative(samplog_LogLevel::ERROR,
+			"message must be shorter than 2000 characters");
+		return 0;
+	}
+
 	auto embedid = static_cast<EmbedId_t>(params[3]);
-	
+
 	cell* rows_ptr = nullptr;
 	amx_GetAddr(amx, params[4], &rows_ptr);
 	int rows_size = static_cast<int>(params[5]);
+
 	std::vector<ActionRowId_t> rows;
 	if (rows_ptr && rows_size > 0)
 	{
+		if (rows_size > 5)
+		{
+			Logger::Get()->LogNative(samplog_LogLevel::ERROR,
+				"a message can only carry up to 5 action rows, got {}", rows_size);
+			return 0;
+		}
+
 		for (int i = 0; i < rows_size; ++i)
-			rows.push_back(static_cast<ActionRowId_t>(rows_ptr[i]));
+		{
+			ActionRowId_t row_id = static_cast<ActionRowId_t>(rows_ptr[i]);
+			auto const& row = ComponentManager::Get()->FindActionRow(row_id);
+			if (!row)
+			{
+				Logger::Get()->LogNative(samplog_LogLevel::ERROR,
+					"invalid action row id '{}' at index {}", row_id, i);
+				return 0;
+			}
+			if (!row->Validate())
+			{
+				// Validate() already logs the precise reason. Refuse to send so
+				// the caller can fix the payload instead of guessing why their
+				// button never appeared.
+				return 0;
+			}
+			rows.push_back(row_id);
+		}
 	}
 
-	auto cb_name = amx_GetCppString(amx, params[6]);
+	auto cb_name   = amx_GetCppString(amx, params[6]);
 	auto cb_format = amx_GetCppString(amx, params[7]);
 
 	pawn_cb::Error cb_error;
-	auto cb = pawn_cb::Callback::Prepare(amx, cb_name.c_str(), cb_format.c_str(), params, 8, cb_error);
-	
+	auto cb = pawn_cb::Callback::Prepare(amx, cb_name.c_str(), cb_format.c_str(),
+		params, 8, cb_error);
+	if (cb_error && cb_error.get() != pawn_cb::Error::Type::EMPTY_NAME)
+	{
+		Logger::Get()->LogNative(samplog_LogLevel::ERROR, "could not prepare callback");
+		return 0;
+	}
+
 	channel->SendMessage(std::move(message), std::move(cb), embedid, rows);
+
+	Logger::Get()->LogNative(samplog_LogLevel::DEBUG, "return value: '1'");
 	return 1;
 }
 
@@ -3560,6 +3690,65 @@ AMX_DECLARE_NATIVE(Native::DCC_GetInteractionMenuCount)
 }
 
 // native DCC_GetModalInputValue(DCC_Interaction:interaction, const custom_id[], dest[], max_size = sizeof dest);
+//
+// Walks the modal submission payload looking for a component matching
+// `custom_id`. Supports both the V1 layout (Action Row > Text Input) and the
+// V2 layout (Label > component) so it keeps working when the modal also hosts
+// selects or file uploads.
+namespace
+{
+	// Returns a pointer to the first component within the modal submission
+	// whose custom_id matches `target`, or nullptr if no match was found.
+	json const* FindModalSubmissionComponent(json const& data, std::string const& target)
+	{
+		auto data_it = data.find("data");
+		if (data_it == data.end())
+			return nullptr;
+
+		auto comps_it = data_it->find("components");
+		if (comps_it == data_it->end() || !comps_it->is_array())
+			return nullptr;
+
+		// Recursively walk component trees: action rows expose `components[]`
+		// while label wrappers expose either `component` (singular) or
+		// `components[]` depending on the API revision in flight.
+		std::function<json const*(json const&)> walk = [&](json const& node) -> json const* {
+			auto cid_it = node.find("custom_id");
+			if (cid_it != node.end() && cid_it->is_string()
+				&& cid_it->get<std::string>() == target)
+			{
+				return &node;
+			}
+
+			auto inner_arr = node.find("components");
+			if (inner_arr != node.end() && inner_arr->is_array())
+			{
+				for (auto const& child : *inner_arr)
+				{
+					if (auto* hit = walk(child))
+						return hit;
+				}
+			}
+
+			auto inner_one = node.find("component");
+			if (inner_one != node.end() && inner_one->is_object())
+			{
+				if (auto* hit = walk(*inner_one))
+					return hit;
+			}
+
+			return nullptr;
+		};
+
+		for (auto const& row : *comps_it)
+		{
+			if (auto* hit = walk(row))
+				return hit;
+		}
+		return nullptr;
+	}
+}
+
 AMX_DECLARE_NATIVE(Native::DCC_GetModalInputValue)
 {
 	ScopedDebugInfo dbg_info(amx, "DCC_GetModalInputValue", params, "dsrd");
@@ -3569,23 +3758,188 @@ AMX_DECLARE_NATIVE(Native::DCC_GetModalInputValue)
 	if (!interaction)
 		return 0;
 
-	auto const& data = interaction->GetInteractionData();
-	if (data.find("data") == data.end() || data.at("data").find("components") == data.at("data").end())
+	std::string custom_id = amx_GetCppString(amx, params[2]);
+
+	json const* hit = FindModalSubmissionComponent(interaction->GetInteractionData(), custom_id);
+	if (!hit)
+		return 0;
+
+	auto val_it = hit->find("value");
+	if (val_it == hit->end() || !val_it->is_string())
+		return 0;
+
+	return amx_SetCppString(amx, params[3], val_it->get<std::string>(), params[4]) == AMX_ERR_NONE;
+}
+
+// native DCC_GetModalSelectCount(DCC_Interaction:interaction, const custom_id[], &count);
+AMX_DECLARE_NATIVE(Native::DCC_GetModalSelectCount)
+{
+	ScopedDebugInfo dbg_info(amx, "DCC_GetModalSelectCount", params, "dsr");
+
+	auto interactionid = static_cast<CommandInteractionId_t>(params[1]);
+	auto const& interaction = CommandInteractionManager::Get()->FindCommandInteraction(interactionid);
+	if (!interaction)
 		return 0;
 
 	std::string custom_id = amx_GetCppString(amx, params[2]);
+	json const* hit = FindModalSubmissionComponent(interaction->GetInteractionData(), custom_id);
+	if (!hit)
+		return 0;
 
-	// Modal data structure: data -> components (array of Action Rows) -> components (array of components)
-	for (auto const& row : data.at("data").at("components"))
+	auto values = hit->find("values");
+	if (values == hit->end() || !values->is_array())
+		return 0;
+
+	cell* dest = nullptr;
+	if (amx_GetAddr(amx, params[3], &dest) != AMX_ERR_NONE || dest == nullptr)
+		return 0;
+
+	*dest = static_cast<cell>(values->size());
+	return 1;
+}
+
+// native DCC_GetModalSelectValue(DCC_Interaction:interaction, const custom_id[], offset, dest[], max_size = sizeof dest);
+AMX_DECLARE_NATIVE(Native::DCC_GetModalSelectValue)
+{
+	ScopedDebugInfo dbg_info(amx, "DCC_GetModalSelectValue", params, "dsdrd");
+
+	auto interactionid = static_cast<CommandInteractionId_t>(params[1]);
+	auto const& interaction = CommandInteractionManager::Get()->FindCommandInteraction(interactionid);
+	if (!interaction)
+		return 0;
+
+	std::string custom_id = amx_GetCppString(amx, params[2]);
+	int offset = static_cast<int>(params[3]);
+
+	json const* hit = FindModalSubmissionComponent(interaction->GetInteractionData(), custom_id);
+	if (!hit)
+		return 0;
+
+	auto values = hit->find("values");
+	if (values == hit->end() || !values->is_array())
+		return 0;
+	if (offset < 0 || offset >= static_cast<int>(values->size()))
+		return 0;
+
+	return amx_SetCppString(amx, params[4],
+		values->at(offset).get<std::string>(), params[5]) == AMX_ERR_NONE;
+}
+
+// native DCC_GetModalAttachmentCount(DCC_Interaction:interaction, const custom_id[], &count);
+//
+// Returns the number of attachments that were uploaded for the file-upload
+// component identified by `custom_id`.
+AMX_DECLARE_NATIVE(Native::DCC_GetModalAttachmentCount)
+{
+	ScopedDebugInfo dbg_info(amx, "DCC_GetModalAttachmentCount", params, "dsr");
+
+	auto interactionid = static_cast<CommandInteractionId_t>(params[1]);
+	auto const& interaction = CommandInteractionManager::Get()->FindCommandInteraction(interactionid);
+	if (!interaction)
+		return 0;
+
+	std::string custom_id = amx_GetCppString(amx, params[2]);
+	json const* hit = FindModalSubmissionComponent(interaction->GetInteractionData(), custom_id);
+	if (!hit)
+		return 0;
+
+	// File upload submissions carry a `values` array of attachment ids and
+	// the resolved attachments live under `data.resolved.attachments`.
+	auto values = hit->find("values");
+	if (values == hit->end() || !values->is_array())
+		return 0;
+
+	cell* dest = nullptr;
+	if (amx_GetAddr(amx, params[3], &dest) != AMX_ERR_NONE || dest == nullptr)
+		return 0;
+
+	*dest = static_cast<cell>(values->size());
+	return 1;
+}
+
+namespace
+{
+	// Looks up the attachment object referenced by the `offset`-th value of
+	// the file-upload component identified by `custom_id`. Returns nullptr if
+	// any step of the lookup fails.
+	json const* FindModalAttachment(json const& data, std::string const& custom_id, int offset)
 	{
-		for (auto const& comp : row.at("components"))
-		{
-			if (comp.at("custom_id").get<std::string>() == custom_id)
-			{
-				return amx_SetCppString(amx, params[3], comp.at("value").get<std::string>(), params[4]) == AMX_ERR_NONE;
-			}
-		}
-	}
+		json const* hit = FindModalSubmissionComponent(data, custom_id);
+		if (!hit)
+			return nullptr;
 
-	return 0;
+		auto values = hit->find("values");
+		if (values == hit->end() || !values->is_array())
+			return nullptr;
+		if (offset < 0 || offset >= static_cast<int>(values->size()))
+			return nullptr;
+
+		std::string id = values->at(offset).get<std::string>();
+
+		auto data_it = data.find("data");
+		if (data_it == data.end())
+			return nullptr;
+		auto resolved = data_it->find("resolved");
+		if (resolved == data_it->end())
+			return nullptr;
+		auto attachments = resolved->find("attachments");
+		if (attachments == resolved->end() || !attachments->is_object())
+			return nullptr;
+
+		auto att_it = attachments->find(id);
+		if (att_it == attachments->end() || !att_it->is_object())
+			return nullptr;
+
+		return &(*att_it);
+	}
+}
+
+// native DCC_GetModalAttachmentId(DCC_Interaction:interaction, const custom_id[], offset, dest[DCC_ID_SIZE], max_size = DCC_ID_SIZE);
+AMX_DECLARE_NATIVE(Native::DCC_GetModalAttachmentId)
+{
+	ScopedDebugInfo dbg_info(amx, "DCC_GetModalAttachmentId", params, "dsdrd");
+
+	auto interactionid = static_cast<CommandInteractionId_t>(params[1]);
+	auto const& interaction = CommandInteractionManager::Get()->FindCommandInteraction(interactionid);
+	if (!interaction)
+		return 0;
+
+	std::string custom_id = amx_GetCppString(amx, params[2]);
+	int offset = static_cast<int>(params[3]);
+
+	json const* att = FindModalAttachment(interaction->GetInteractionData(), custom_id, offset);
+	if (!att)
+		return 0;
+
+	auto id_it = att->find("id");
+	if (id_it == att->end() || !id_it->is_string())
+		return 0;
+
+	return amx_SetCppString(amx, params[4],
+		id_it->get<std::string>(), params[5]) == AMX_ERR_NONE;
+}
+
+// native DCC_GetModalAttachmentUrl(DCC_Interaction:interaction, const custom_id[], offset, dest[], max_size = sizeof dest);
+AMX_DECLARE_NATIVE(Native::DCC_GetModalAttachmentUrl)
+{
+	ScopedDebugInfo dbg_info(amx, "DCC_GetModalAttachmentUrl", params, "dsdrd");
+
+	auto interactionid = static_cast<CommandInteractionId_t>(params[1]);
+	auto const& interaction = CommandInteractionManager::Get()->FindCommandInteraction(interactionid);
+	if (!interaction)
+		return 0;
+
+	std::string custom_id = amx_GetCppString(amx, params[2]);
+	int offset = static_cast<int>(params[3]);
+
+	json const* att = FindModalAttachment(interaction->GetInteractionData(), custom_id, offset);
+	if (!att)
+		return 0;
+
+	auto url_it = att->find("url");
+	if (url_it == att->end() || !url_it->is_string())
+		return 0;
+
+	return amx_SetCppString(amx, params[4],
+		url_it->get<std::string>(), params[5]) == AMX_ERR_NONE;
 }

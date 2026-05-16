@@ -65,7 +65,9 @@ enum DCC_ComponentType
 	DCC_COMPONENT_USER_SELECT = 5,
 	DCC_COMPONENT_ROLE_SELECT = 6,
 	DCC_COMPONENT_MENTION_SELECT = 7,
-	DCC_COMPONENT_CHANNEL_SELECT = 8
+	DCC_COMPONENT_CHANNEL_SELECT = 8,
+	DCC_COMPONENT_LABEL = 18,
+	DCC_COMPONENT_FILE_UPLOAD = 19
 };
 
 enum DCC_ButtonStyle
@@ -288,17 +290,28 @@ native DCC_SendInteractionModal(DCC_Interaction:interaction, DCC_Modal:modal);
 native DCC_Component:DCC_CreateButton(const text[], DCC_ButtonStyle:style, const custom_id[], const url[] = "", bool:disabled = false, DCC_Emoji:emoji = DCC_Emoji:0);
 native DCC_Component:DCC_CreateSelectMenu(DCC_ComponentType:type, const custom_id[], const placeholder[] = "", min_values = 1, max_values = 1, bool:disabled = false);
 native bool:DCC_AddSelectMenuOption(DCC_Component:menu, const label[], const value[], const description[] = "", DCC_Emoji:emoji = DCC_Emoji:0, bool:is_default = false);
+native DCC_Component:DCC_CreateTextInput(const custom_id[], DCC_TextInputStyle:style, const label[], min_length = -1, max_length = -1, bool:required = true, const value[] = "", const placeholder[] = "");
+native DCC_Component:DCC_CreateFileUpload(const custom_id[], min_values = 1, max_values = 1, bool:required = true);
 native DCC_ActionRow:DCC_CreateActionRow();
 native bool:DCC_AddComponentToActionRow(DCC_ActionRow:row, DCC_Component:component);
 
 // modals
 native DCC_Modal:DCC_CreateModal(const title[], const custom_id[]);
 native bool:DCC_AddModalInput(DCC_Modal:modal, const custom_id[], DCC_TextInputStyle:style, const label[], min_length = -1, max_length = -1, bool:required = true, const value[] = "", const placeholder[] = "");
+// DCC_AddModalComponent attaches any input-style component (text input, select menu, file upload) to a modal.
+// `label` and `description` are surfaced as the visible Label wrapper text for select menus and file uploads.
+// Pass empty strings to keep the historic plain Action Row layout (text inputs only).
+native bool:DCC_AddModalComponent(DCC_Modal:modal, DCC_Component:component, const label[] = "", const description[] = "");
 
 // interaction retrieval
 native DCC_GetInteractionMenuValue(DCC_Interaction:interaction, offset, dest[], max_size = sizeof dest);
 native DCC_GetInteractionMenuCount(DCC_Interaction:interaction, &count);
 native DCC_GetModalInputValue(DCC_Interaction:interaction, const custom_id[], dest[], max_size = sizeof dest);
+native DCC_GetModalSelectCount(DCC_Interaction:interaction, const custom_id[], &count);
+native DCC_GetModalSelectValue(DCC_Interaction:interaction, const custom_id[], offset, dest[], max_size = sizeof dest);
+native DCC_GetModalAttachmentCount(DCC_Interaction:interaction, const custom_id[], &count);
+native DCC_GetModalAttachmentId(DCC_Interaction:interaction, const custom_id[], offset, dest[DCC_ID_SIZE], max_size = DCC_ID_SIZE);
+native DCC_GetModalAttachmentUrl(DCC_Interaction:interaction, const custom_id[], offset, dest[], max_size = sizeof dest);
 
 // callbacks
 forward DCC_OnInteraction(DCC_Interaction:interaction, DCC_User:user, DCC_InteractionType:type, const custom_id[]);
