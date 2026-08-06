@@ -16,6 +16,8 @@
 #include <samplog/samplog.hpp>
 #include <thread>
 #include <cstdlib>
+#include <fstream>
+#include <json.hpp>
 
 extern void	*pAMXFunctions;
 logprintf_t logprintf;
@@ -125,6 +127,50 @@ PLUGIN_EXPORT bool PLUGIN_CALL Load(void **ppData)
 	}
 	if (bot_token.empty())
 		SampConfigReader::Get()->GetVar("discord_bot_token", bot_token);
+
+	if (bot_token.empty())
+	{
+		std::ifstream cfg_json("config.json");
+		if (cfg_json.is_open())
+		{
+			try {
+				nlohmann::json j;
+				cfg_json >> j;
+				if (j.count("discord_bot_token") && j["discord_bot_token"].is_string())
+					bot_token = j["discord_bot_token"].get<std::string>();
+			} catch (...) {}
+		}
+	}
+
+	if (bot_token.empty())
+	{
+		std::ifstream dc_cfg("dc-token.cfg");
+		if (dc_cfg.is_open())
+		{
+			std::string line;
+			while (std::getline(dc_cfg, line))
+			{
+				size_t pos = line.find("discord_bot_token");
+				if (pos != std::string::npos)
+				{
+					size_t val_pos = line.find_first_not_of(" \t\r\n", pos + 17);
+					if (val_pos != std::string::npos)
+						bot_token = line.substr(val_pos);
+				}
+				else if (!line.empty() && line.find_first_not_of(" \t\r\n") != std::string::npos && bot_token.empty())
+				{
+					size_t val_pos = line.find_first_not_of(" \t\r\n");
+					bot_token = line.substr(val_pos);
+				}
+			}
+			if (!bot_token.empty())
+			{
+				size_t endpos = bot_token.find_last_not_of(" \t\r\n");
+				if (endpos != std::string::npos)
+					bot_token.erase(endpos + 1);
+			}
+		}
+	}
 
 	if (!bot_token.empty())
 	{
