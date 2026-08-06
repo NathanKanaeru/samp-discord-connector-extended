@@ -178,7 +178,12 @@ PLUGIN_EXPORT bool PLUGIN_CALL Load(void **ppData)
 
 		if (WaitForInitialization())
 		{
-			logprintf(" >> discord-connector: " PLUGIN_VERSION " successfully loaded.");
+			logprintf(" ========================================");
+			logprintf("  Discord Connector Extended");
+			logprintf("  Version: " PLUGIN_VERSION);
+			logprintf("  Author: NathanKanaeru");
+			logprintf("  Status: Successfully loaded and ready!");
+			logprintf(" ========================================");
 		}
 		else
 		{
