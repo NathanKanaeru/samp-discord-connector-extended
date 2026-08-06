@@ -195,7 +195,7 @@ std::string CommandInteraction::GetContent() const
 	return "";
 }
 
-void CommandInteraction::SendEmbed(EmbedId_t embedid, const std::string message, std::vector<ActionRowId_t> const &rows)
+void CommandInteraction::SendEmbed(EmbedId_t embedid, const std::string message, std::vector<ActionRowId_t> const &rows, bool ephemeral)
 {
 	auto& embed = EmbedManager::Get()->FindEmbed(embedid);
 	json data = {
@@ -262,6 +262,9 @@ void CommandInteraction::SendEmbed(EmbedId_t embedid, const std::string message,
 
 	if (!m_Responded)
 	{
+		if (ephemeral)
+			data["flags"] = 64; // EPHEMERAL
+
 		json payload = {
 			{ "type", 4 }, // CHANNEL_MESSAGE_WITH_SOURCE
 			{ "data", data }
@@ -276,6 +279,9 @@ void CommandInteraction::SendEmbed(EmbedId_t embedid, const std::string message,
 	}
 	else
 	{
+		if (ephemeral)
+			data["flags"] = 64; // EPHEMERAL
+
 		std::string json_str;
 		if (!utils::TryDumpJson(data, json_str))
 			Logger::Get()->Log(samplog_LogLevel::ERROR, "can't serialize JSON: {}", json_str);
@@ -285,7 +291,7 @@ void CommandInteraction::SendEmbed(EmbedId_t embedid, const std::string message,
 	}
 }
 
-void CommandInteraction::SendInteractionMessage(const std::string message, std::vector<ActionRowId_t> const &rows)
+void CommandInteraction::SendInteractionMessage(const std::string message, std::vector<ActionRowId_t> const &rows, bool ephemeral)
 {
 	json data_content = json::object();
 	if (!message.empty())
@@ -307,6 +313,9 @@ void CommandInteraction::SendInteractionMessage(const std::string message, std::
 
 	if (!m_Responded)
 	{
+		if (ephemeral)
+			data_content["flags"] = 64; // EPHEMERAL
+
 		json data = {
 			{ "type", 4 }, // CHANNEL_MESSAGE_WITH_SOURCE
 			{ "data", data_content }
@@ -321,6 +330,9 @@ void CommandInteraction::SendInteractionMessage(const std::string message, std::
 	}
 	else
 	{
+		if (ephemeral)
+			data_content["flags"] = 64; // EPHEMERAL
+
 		std::string json_str;
 		if (!utils::TryDumpJson(data_content, json_str))
 			Logger::Get()->Log(samplog_LogLevel::ERROR, "can't serialize JSON: {}", json_str);

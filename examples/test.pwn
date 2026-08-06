@@ -41,7 +41,7 @@ public OnTestCommand(DCC_Interaction:interaction, DCC_User:user)
         DCC_AddEmbedField(embed, "Status", "Working", true);
         DCC_SetEmbedFooter(embed, "DCC Extended Test");
         
-        DCC_SendInteractionEmbed(interaction, embed);
+        DCC_SendInteractionEmbed(interaction, embed, "", true);
         return 1;
     }
 
@@ -71,7 +71,7 @@ public OnTestCommand(DCC_Interaction:interaction, DCC_User:user)
     DCC_GetInteractionChannel(interaction, ch);
     DCC_SendChannelMessageEx(ch, "", embed, rows, 2);
     
-    DCC_SendInteractionMessage(interaction, "I've sent an interactive menu to this channel!");
+    DCC_SendInteractionMessage(interaction, "I've sent an interactive menu to this channel!", true);
     return 1;
 }
 

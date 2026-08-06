@@ -61,8 +61,8 @@ public:
 	CommandInteractionOption const * GetOption(std::size_t offset) const;
 	nlohmann::json const& GetInteractionData() const { return m_InteractionJson; }
 
-	void SendEmbed(EmbedId_t embedid, const std::string message = "", std::vector<ActionRowId_t> const &rows = {});
-	void SendInteractionMessage(const std::string message, std::vector<ActionRowId_t> const &rows = {});
+	void SendEmbed(EmbedId_t embedid, const std::string message = "", std::vector<ActionRowId_t> const &rows = {}, bool ephemeral = false);
+	void SendInteractionMessage(const std::string message, std::vector<ActionRowId_t> const &rows = {}, bool ephemeral = false);
 	void SendModal(ModalId_t modalid);
 
 private:

@@ -355,8 +355,8 @@ DCC_GetModalAttachmentId   (DCC_Interaction:i, const custom_id[], offset,
 DCC_GetModalAttachmentUrl  (DCC_Interaction:i, const custom_id[], offset,
                             dest[], max_size = sizeof dest);
 
-DCC_SendInteractionMessage(DCC_Interaction:i, const message[] = "");
+DCC_SendInteractionMessage(DCC_Interaction:i, const message[] = "", bool:ephemeral = false);
 DCC_SendInteractionEmbed  (DCC_Interaction:i, DCC_Embed:embed,
-                           const message[] = "");
+                           const message[] = "", bool:ephemeral = false);
 DCC_SendInteractionModal  (DCC_Interaction:i, DCC_Modal:modal);
 ```

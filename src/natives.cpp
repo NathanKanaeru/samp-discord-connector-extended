@@ -3181,10 +3181,10 @@ AMX_DECLARE_NATIVE(Native::DCC_GetInteractionGuild)
 	return 1;
 }
 
-// native DCC_SendInteractionEmbed(DCC_Interaction:interaction, DCC_Embed:embed, const message[] = "");
+// native DCC_SendInteractionEmbed(DCC_Interaction:interaction, DCC_Embed:embed, const message[] = "", bool:ephemeral = false);
 AMX_DECLARE_NATIVE(Native::DCC_SendInteractionEmbed)
 {
-	ScopedDebugInfo dbg_info(amx, "DCC_SendInteractionEmbed", params, "ddsss");
+	ScopedDebugInfo dbg_info(amx, "DCC_SendInteractionEmbed", params, "ddssb");
 
 	CommandInteractionId_t id = params[1];
 	CommandInteraction_t const& interaction = CommandInteractionManager::Get()->FindCommandInteraction(id);
@@ -3210,16 +3210,18 @@ AMX_DECLARE_NATIVE(Native::DCC_SendInteractionEmbed)
 		return 0;
 	}
 
-	interaction->SendEmbed(embedid, message);
+	bool ephemeral = static_cast<bool>(params[4]);
+
+	interaction->SendEmbed(embedid, message, {}, ephemeral);
 	EmbedManager::Get()->DeleteEmbed(embedid);
 	Logger::Get()->LogNative(samplog_LogLevel::DEBUG, "return value: '1'");
 	return 1;
 }
 
-// native DCC_SendInteractionMessage(DCC_Interaction:interaction, const message[] = "");
+// native DCC_SendInteractionMessage(DCC_Interaction:interaction, const message[] = "", bool:ephemeral = false);
 AMX_DECLARE_NATIVE(Native::DCC_SendInteractionMessage)
 {
-	ScopedDebugInfo dbg_info(amx, "DCC_SendInteractionMessage", params, "ds");
+	ScopedDebugInfo dbg_info(amx, "DCC_SendInteractionMessage", params, "dsb");
 
 	CommandInteractionId_t id = params[1];
 	CommandInteraction_t const& interaction = CommandInteractionManager::Get()->FindCommandInteraction(id);
@@ -3237,7 +3239,9 @@ AMX_DECLARE_NATIVE(Native::DCC_SendInteractionMessage)
 		return 0;
 	}
 
-	interaction->SendInteractionMessage(message);
+	bool ephemeral = static_cast<bool>(params[3]);
+
+	interaction->SendInteractionMessage(message, {}, ephemeral);
 	Logger::Get()->LogNative(samplog_LogLevel::DEBUG, "return value: '1'");
 	return 1;
 }

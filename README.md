@@ -445,8 +445,8 @@ DCC_SendChannelMessage(DCC_Channel:ch, message[],
 DCC_SendChannelMessageEx(DCC_Channel:ch, message[], DCC_Embed:embed,
                          DCC_ActionRow:rows[], rows_size,
                          callback[]="", format[]="", {Float,_}:...);
-DCC_SendInteractionMessage(DCC_Interaction:i, message[]="");
-DCC_SendInteractionEmbed  (DCC_Interaction:i, DCC_Embed:e, message[]="");
+DCC_SendInteractionMessage(DCC_Interaction:i, message[]="", bool:ephemeral=false);
+DCC_SendInteractionEmbed  (DCC_Interaction:i, DCC_Embed:e, message[]="", bool:ephemeral=false);
 ```
 
 For the full list — channels, users, roles, guilds, embeds, emojis, reactions, slash-command builders — open `pawno/include/discord-connector.inc` after installation, or look at the [API Reference page](wiki/API-Reference.md) on the wiki.
