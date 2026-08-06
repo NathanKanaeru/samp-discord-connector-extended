@@ -87,9 +87,11 @@ void Channel::UpdateParentChannel(Snowflake_t const &parent_id)
 
 void Channel::SendMessage(std::string &&msg, pawn_cb::Callback_t &&cb, EmbedId_t embedid, std::vector<ActionRowId_t> const &rows)
 {
-	json data = {
-		{ "content", std::move(msg) }
-	};
+	json data = json::object();
+	if (!msg.empty())
+	{
+		data["content"] = std::move(msg);
+	}
 
 	if (embedid != INVALID_EMBED_ID)
 	{
@@ -258,9 +260,12 @@ void Channel::DeleteChannel()
 void Channel::SendEmbeddedMessage(const Embed_t & embed, std::string&& msg, pawn_cb::Callback_t&& cb)
 {
 	json data = {
-		{ "content", std::move(msg) },
 		{ "embeds", { json::object() } }
 	};
+	if (!msg.empty())
+	{
+		data["content"] = std::move(msg);
+	}
 
 	data["embeds"][0] = json::object({
 		{ "title", embed->GetTitle() },

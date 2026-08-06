@@ -155,9 +155,11 @@ bool Message::EditMessage(const std::string& msg, const EmbedId_t embedid)
 	if (!channel)
 		return false;
 
-	json data = {
-		{ "content", msg }
-	};
+	json data = json::object();
+	if (!msg.empty())
+	{
+		data["content"] = msg;
+	}
 
 	if (embedid != INVALID_EMBED_ID)
 	{

@@ -42,6 +42,7 @@ CommandInteraction::CommandInteraction(CommandInteractionId_t id, UserId_t user,
 
 	if (interaction_json.at("type").get<int>() == 2 /*application command*/)
 	{
+		m_Responded = true;
 		std::string name = interaction_json.at("data").at("name").get<std::string>();
 		
 		std::string guild_str = "";
@@ -198,11 +199,14 @@ void CommandInteraction::SendEmbed(EmbedId_t embedid, const std::string message,
 {
 	auto& embed = EmbedManager::Get()->FindEmbed(embedid);
 	json data = {
-		{ "content", message },
 		{ "embeds", {
 			json::object()
 		}}
 	};
+	if (!message.empty())
+	{
+		data["content"] = message;
+	}
 
 	// Add fields (if any).
 
@@ -256,19 +260,38 @@ void CommandInteraction::SendEmbed(EmbedId_t embedid, const std::string message,
 		data["components"] = components;
 	}
 
-	std::string json_str;
-	if (!utils::TryDumpJson(data, json_str))
-		Logger::Get()->Log(samplog_LogLevel::ERROR, "can't serialize JSON: {}", json_str);
+	if (!m_Responded)
+	{
+		json payload = {
+			{ "type", 4 }, // CHANNEL_MESSAGE_WITH_SOURCE
+			{ "data", data }
+		};
 
-	/*/webhooks/{application.id}/{interaction.token}/messages/@original*/
-	Network::Get()->Http().Patch(fmt::format("/webhooks/{:s}/{:s}/messages/@original", ThisBot::Get()->GetApplicationID(), m_Token), json_str);
+		std::string json_str;
+		if (!utils::TryDumpJson(payload, json_str))
+			Logger::Get()->Log(samplog_LogLevel::ERROR, "can't serialize JSON: {}", json_str);
+
+		Network::Get()->Http().Post(fmt::format("/interactions/{:s}/{:s}/callback", m_IDSnowflake, m_Token), json_str);
+		m_Responded = true;
+	}
+	else
+	{
+		std::string json_str;
+		if (!utils::TryDumpJson(data, json_str))
+			Logger::Get()->Log(samplog_LogLevel::ERROR, "can't serialize JSON: {}", json_str);
+
+		/*/webhooks/{application.id}/{interaction.token}/messages/@original*/
+		Network::Get()->Http().Patch(fmt::format("/webhooks/{:s}/{:s}/messages/@original", ThisBot::Get()->GetApplicationID(), m_Token), json_str);
+	}
 }
 
 void CommandInteraction::SendInteractionMessage(const std::string message, std::vector<ActionRowId_t> const &rows)
 {
-	json data_content = {
-		{ "content", message }
-	};
+	json data_content = json::object();
+	if (!message.empty())
+	{
+		data_content["content"] = message;
+	}
 
 	if (!rows.empty())
 	{
