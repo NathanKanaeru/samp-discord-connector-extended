@@ -135,6 +135,7 @@ private: // functions
 	void OnHandshake(beast::error_code ec);
 
 	void Disconnect(bool reconnect = false);
+	void ScheduleReconnect();
 	void OnClose(beast::error_code ec);
 	void OnReconnect(beast::error_code ec);
 

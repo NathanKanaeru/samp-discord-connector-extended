@@ -178,6 +178,38 @@ void WebSocket::Disconnect(bool reconnect /*= false*/)
 				&WebSocket::OnClose,
 				this));
 	}
+	else if (_reconnect)
+	{
+		// No stream exists yet (e.g. DNS/connect failure before the
+		// websocket was created). Close will never arrive, so schedule
+		// the reconnect directly, otherwise initialization would hang
+		// until WaitForInitialization() times out.
+		Logger::Get()->Log(samplog_LogLevel::INFO,
+			"no active websocket stream; scheduling reconnect directly");
+		ScheduleReconnect();
+	}
+}
+
+void WebSocket::ScheduleReconnect()
+{
+	++_reconnectCount;
+
+	// exponential backoff, capped at 60 seconds
+	auto time = std::chrono::seconds(
+		std::min(1u << std::min(_reconnectCount, 6u), 60u));
+
+	if (time.count() > 0)
+	{
+		Logger::Get()->Log(samplog_LogLevel::INFO,
+			"reconnecting in {:d} seconds",
+			time.count());
+	}
+
+	_reconnectTimer.expires_from_now(time);
+	_reconnectTimer.async_wait(
+		beast::bind_front_handler(
+			&WebSocket::OnReconnect,
+			this));
 }
 
 void WebSocket::OnClose(beast::error_code ec)
@@ -190,21 +222,7 @@ void WebSocket::OnClose(beast::error_code ec)
 
 	if (_reconnect)
 	{
-		auto time = std::chrono::seconds(
-			std::min(_reconnectCount * 5, 60u));
-
-		if (time.count() > 0)
-		{
-			Logger::Get()->Log(samplog_LogLevel::INFO,
-				"reconnecting in {:d} seconds",
-				time.count());
-		}
-
-		_reconnectTimer.expires_from_now(time);
-		_reconnectTimer.async_wait(
-			beast::bind_front_handler(
-				&WebSocket::OnReconnect,
-				this));
+		ScheduleReconnect();
 	}
 }
 
@@ -217,8 +235,8 @@ void WebSocket::OnReconnect(beast::error_code ec)
 		switch (ec.value())
 		{
 		case boost::asio::error::operation_aborted:
-			// timer was chancelled, do nothing
-			Logger::Get()->Log(samplog_LogLevel::DEBUG, "reconnect timer chancelled");
+			// timer was cancelled, do nothing
+			Logger::Get()->Log(samplog_LogLevel::DEBUG, "reconnect timer cancelled");
 			break;
 		default:
 			Logger::Get()->Log(samplog_LogLevel::ERROR, "reconnect timer error: {} ({})",
@@ -228,7 +246,6 @@ void WebSocket::OnReconnect(beast::error_code ec)
 		return;
 	}
 
-	++_reconnectCount;
 	Connect();
 }
 

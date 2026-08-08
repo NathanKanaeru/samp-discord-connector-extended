@@ -50,8 +50,10 @@ bool WaitForInitialization()
 {
 	unsigned int const
 		SLEEP_TIME_MS = 20,
-		TIMEOUT_TIME_MS = 20 * 1000;
+		LOG_INTERVAL_MS = 5 * 1000,
+		TIMEOUT_TIME_MS = 60 * 1000;
 	unsigned int waited_time = 0;
+	unsigned int last_log_time = 0;
 	while (true)
 	{
 		if (GuildManager::Get()->IsInitialized()
@@ -64,6 +66,18 @@ bool WaitForInitialization()
 
 		std::this_thread::sleep_for(std::chrono::milliseconds(SLEEP_TIME_MS));
 		waited_time += SLEEP_TIME_MS;
+		if (waited_time - last_log_time >= LOG_INTERVAL_MS)
+		{
+			last_log_time = waited_time;
+			logprintf(" >> discord-connector: waiting for discord data... (%ds/%ds)",
+				waited_time / 1000, TIMEOUT_TIME_MS / 1000);
+			Logger::Get()->Log(samplog_LogLevel::DEBUG,
+				"initialization progress: guilds={} users={} channels={} commands={}",
+				GuildManager::Get()->IsInitialized() ? "ready" : "pending",
+				UserManager::Get()->IsInitialized() ? "ready" : "pending",
+				ChannelManager::Get()->IsInitialized() ? "ready" : "pending",
+				CommandManager::Get()->IsInitialized() ? "ready" : "pending");
+		}
 		if (waited_time > TIMEOUT_TIME_MS)
 			break;
 	}
