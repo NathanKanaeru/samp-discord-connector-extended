@@ -22,7 +22,7 @@ for arg in "$@"; do
     esac
 done
 
-GCC_MAJOR=$(gcc -dumpversion 2>/dev/null | cut -d. -f1)
+GCC_MAJOR=$(gcc -dumpversion 2>/dev/null | cut -d. -f1 || true)
 USE_GCC14=0
 if [ -n "$GCC_MAJOR" ] && [ "$GCC_MAJOR" -ge 15 ]; then
     echo "[*] gcc $GCC_MAJOR detected; Conan 1.x needs gcc <= 14, installing gcc-14/g++-14"
@@ -49,7 +49,6 @@ if [ "$SKIP_DEPS" -eq 0 ]; then
         sudo apt-get update
     fi
     sudo apt-get install -y --no-install-recommends \
-        libssl-dev \
         libssl-dev:i386
 
     if [ "$USE_GCC14" -eq 1 ]; then
@@ -57,7 +56,8 @@ if [ "$SKIP_DEPS" -eq 0 ]; then
     fi
 
     echo "[*] Installing CMake and Conan 1.x via pip..."
-    python3 -m pip install --user --break-system-packages "conan<2" "cmake>=3.19,<4"
+    # --break-system-packages removed for compatibility with older pip
+    python3 -m pip install --user "conan<2" "cmake>=3.19,<4"
     export PATH="$HOME/.local/bin:$PATH"
 fi
 
@@ -66,6 +66,7 @@ command -v cmake >/dev/null || { echo "cmake not found, re-run without --build";
 command -v conan >/dev/null || { echo "conan not found, re-run without --build"; exit 1; }
 
 export CMAKE_POLICY_VERSION_MINIMUM=3.5
+export PKG_CONFIG_PATH="/usr/lib/i386-linux-gnu/pkgconfig:$PKG_CONFIG_PATH"
 
 CONFIGURE_ARGS=(
     -S . -B "$BUILD_DIR" -G Ninja
@@ -74,6 +75,7 @@ CONFIGURE_ARGS=(
     -DCMAKE_CXX_FLAGS=-m32
     -DCMAKE_EXE_LINKER_FLAGS=-m32
     -DCMAKE_SHARED_LINKER_FLAGS=-m32
+    -DOPENSSL_ROOT_DIR=/usr/lib/i386-linux-gnu
     -DGH_ACBUILD=TRUE
 )
 
