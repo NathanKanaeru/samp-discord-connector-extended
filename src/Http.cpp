@@ -116,6 +116,7 @@ void Http::NetworkThreadFunc()
 			do
 			{
 				bool do_reconnect = false;
+				beast::get_lowest_layer(*m_SslStream).expires_after(std::chrono::seconds(15));
 				beast::http::write(*m_SslStream, *entry->Request, error_code);
 				if (error_code)
 				{
@@ -128,6 +129,7 @@ void Http::NetworkThreadFunc()
 				}
 				else
 				{
+					beast::get_lowest_layer(*m_SslStream).expires_after(std::chrono::seconds(15));
 					beast::http::read(*m_SslStream, sb, response, error_code);
 					if (error_code)
 					{
@@ -340,7 +342,7 @@ Http::SharedRequest_t Http::PrepareRequest(beast::http::verb const method,
 	req->insert(beast::http::field::connection, "keep-alive");
 	req->insert(beast::http::field::host, "discord.com");
 	req->insert(beast::http::field::user_agent,
-		"samp-discord-connector (" BOOST_BEAST_VERSION_STRING ")");
+		"DiscordBot (https://github.com/NathanKanaeru/samp-discord-connector-extended, 0.3.9)");
 	if (!content.empty())
 		req->insert(beast::http::field::content_type, "application/json");
 	req->insert(beast::http::field::authorization, "Bot " + m_Token);
