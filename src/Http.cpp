@@ -7,12 +7,13 @@
 #include <boost/beast/version.hpp>
 
 Http::Http(std::string token) :
-	m_SslContext(asio::ssl::context::tlsv12_client),
+	m_SslContext(asio::ssl::context::tls_client),
 	m_Token(token),
 	m_NetworkThreadRunning(true),
 	m_NetworkThread(std::bind(&Http::NetworkThreadFunc, this))
 {
-
+	m_SslContext.set_default_verify_paths();
+	m_SslContext.set_verify_mode(asio::ssl::verify_none);
 }
 
 Http::~Http()

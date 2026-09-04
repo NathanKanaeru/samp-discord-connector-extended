@@ -9,11 +9,13 @@ extern logprintf_t logprintf;
 WebSocket::WebSocket() :
 	_ioContext(),
 	_resolver(asio::make_strand(_ioContext)),
-	_sslContext(asio::ssl::context::tlsv12_client),
+	_sslContext(asio::ssl::context::tls_client),
 	_reconnectTimer(_ioContext),
 	m_HeartbeatTimer(_ioContext),
 	m_HeartbeatInterval()
 {
+	_sslContext.set_default_verify_paths();
+	_sslContext.set_verify_mode(asio::ssl::verify_none);
 	Logger::Get()->Log(samplog_LogLevel::DEBUG, "WebSocket::WebSocket");
 }
 
@@ -92,6 +94,19 @@ void WebSocket::OnConnect(beast::error_code ec,
 		Logger::Get()->Log(samplog_LogLevel::ERROR, 
 			"Can't connect to Discord gateway: {} ({})",
 			ec.message(), ec.value());
+		Disconnect(true);
+		return;
+	}
+
+	// Set SNI Hostname (required for Cloudflare / Discord gateway)
+	if (!SSL_set_tlsext_host_name(_websocket->next_layer().native_handle(), _gatewayUrl.c_str()))
+	{
+		beast::error_code ssl_ec{
+			static_cast<int>(::ERR_get_error()),
+			asio::error::get_ssl_category() };
+		Logger::Get()->Log(samplog_LogLevel::ERROR,
+			"Can't set SNI hostname for Discord gateway: {} ({})",
+			ssl_ec.message(), ssl_ec.value());
 		Disconnect(true);
 		return;
 	}
